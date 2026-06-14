@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>HSK Flashcards</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="hsk5_flashcards_data.js"></script>
     <style>
       :root {
@@ -466,6 +467,172 @@
         font-weight: 700;
       }
 
+      .mini-exam-header {
+        display: grid;
+        gap: 8px;
+      }
+
+      .mini-exam-meta,
+      .mini-exam-score {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 13px;
+        flex-wrap: wrap;
+      }
+
+      .mini-exam-type {
+        width: fit-content;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 4px 9px;
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .mini-exam-review {
+        display: grid;
+        gap: 10px;
+        max-height: 56vh;
+        overflow: auto;
+        padding-right: 4px;
+      }
+
+      .mini-review-item {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-strong);
+        padding: 12px;
+      }
+
+      .mini-review-item.correct {
+        border-color: var(--success);
+      }
+
+      .mini-review-item.wrong {
+        border-color: #dc2626;
+      }
+
+      .mini-review-prompt {
+        margin: 0 0 8px;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+      }
+
+      .mini-review-answer {
+        margin: 3px 0;
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+
+      .progress-dashboard {
+        width: min(1080px, 100%);
+        background: var(--paper);
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        padding: clamp(18px, 3vw, 28px);
+        display: grid;
+        gap: 18px;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .dashboard-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-strong);
+        padding: 14px;
+        min-height: 92px;
+      }
+
+      .dashboard-card strong {
+        display: block;
+        font-size: clamp(24px, 3vw, 34px);
+        line-height: 1.1;
+      }
+
+      .dashboard-card span {
+        display: block;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .dashboard-section {
+        display: grid;
+        gap: 10px;
+      }
+
+      .dashboard-section h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .level-row {
+        display: grid;
+        grid-template-columns: 84px minmax(0, 1fr) 72px;
+        gap: 10px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .chart-box {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-strong);
+        padding: 12px;
+        min-height: 260px;
+      }
+
+      .chart-box canvas {
+        width: 100%;
+        height: 220px;
+      }
+
+      .wrong-word-list {
+        display: grid;
+        gap: 8px;
+        max-height: 360px;
+        overflow: auto;
+        padding-right: 4px;
+      }
+
+      .wrong-word-item {
+        display: grid;
+        grid-template-columns: minmax(96px, 0.6fr) minmax(130px, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-strong);
+        padding: 10px;
+      }
+
+      .wrong-word-item strong,
+      .wrong-word-item span {
+        overflow-wrap: anywhere;
+      }
+
+      .wrong-word-item em {
+        color: var(--warn);
+        font-style: normal;
+        font-weight: 800;
+      }
+
       .match-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -489,6 +656,11 @@
       .match-button.selected {
         border-color: var(--accent);
         box-shadow: inset 0 0 0 2px rgba(15, 118, 110, 0.18);
+      }
+
+      .option-button.selected {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 2px rgba(81, 102, 184, 0.22);
       }
 
       .match-button[disabled],
@@ -596,8 +768,15 @@
         }
 
         .option-grid,
+        .dashboard-grid,
+        .chart-grid,
         .match-grid,
         .edit-row {
+          grid-template-columns: 1fr;
+        }
+
+        .level-row,
+        .wrong-word-item {
           grid-template-columns: 1fr;
         }
       }
@@ -639,6 +818,22 @@
               aria-pressed="false"
             >
               Ghép thẻ
+            </button>
+            <button
+              class="chip"
+              data-view="miniExam"
+              type="button"
+              aria-pressed="false"
+            >
+              Thi thử HSK mini
+            </button>
+            <button
+              class="chip"
+              data-view="progress"
+              type="button"
+              aria-pressed="false"
+            >
+              📊 Tiến độ học tập
             </button>
             <button
               class="chip"
@@ -936,11 +1131,25 @@
         quizDirection: "zh-vi",
         quiz: null,
         match: null,
+        miniExam: null,
         voices: [],
         markedCards: new Set(),
         difficultCards: new Set(),
         viewedCards: new Set(),
         progress: { flashcards: 0, quizzes: 0, matches: 0 },
+        learningStats: {
+          correctAnswers: 0,
+          wrongAnswers: 0,
+          studyTimeSeconds: 0,
+          totalSessions: 0,
+          streak: 0,
+          lastStudyDate: "",
+          daily: {},
+          cardStats: {},
+          masteredCards: [],
+        },
+        sessionStartedAt: Date.now(),
+        chartInstances: {},
         practiceCounts: {},
         reviewDifficultOnly: false,
         theme: "light",
@@ -952,6 +1161,7 @@
       const DIFFICULT_KEY = "hsk_flashcard_difficult_v1";
       const VIEWED_KEY = "hsk_flashcard_viewed_v1";
       const PROGRESS_KEY = "hsk_flashcard_progress_v1";
+      const LEARNING_STATS_KEY = "hsk_learning_stats_v1";
       const THEME_KEY = "hsk_flashcard_theme_v1";
       const FILTER_KEY = "hsk_flashcard_filter_v1";
 
@@ -1056,6 +1266,113 @@
         }
       };
 
+      const defaultLearningStats = () => ({
+        correctAnswers: 0,
+        wrongAnswers: 0,
+        studyTimeSeconds: 0,
+        totalSessions: 0,
+        streak: 0,
+        lastStudyDate: "",
+        daily: {},
+        cardStats: {},
+        masteredCards: [],
+      });
+
+      const normalizeLearningStats = (stats) => ({
+        ...defaultLearningStats(),
+        ...(stats || {}),
+        daily: { ...(stats?.daily || {}) },
+        cardStats: { ...(stats?.cardStats || {}) },
+        masteredCards: Array.isArray(stats?.masteredCards)
+          ? stats.masteredCards
+          : [],
+      });
+
+      const loadLearningStats = () => {
+        try {
+          const saved = localStorage.getItem(LEARNING_STATS_KEY);
+          state.learningStats = normalizeLearningStats(
+            saved ? JSON.parse(saved) : null,
+          );
+        } catch (error) {
+          state.learningStats = defaultLearningStats();
+        }
+      };
+
+      const saveLearningStats = () => {
+        try {
+          localStorage.setItem(
+            LEARNING_STATS_KEY,
+            JSON.stringify(state.learningStats),
+          );
+        } catch (error) {}
+      };
+
+      const dateKey = (date = new Date()) => {
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${date.getFullYear()}-${month}-${day}`;
+      };
+
+      const daysBetween = (from, to) => {
+        if (!from || !to) return 0;
+        const start = new Date(`${from}T00:00:00`);
+        const end = new Date(`${to}T00:00:00`);
+        return Math.round((end - start) / 86400000);
+      };
+
+      const registerStudySession = () => {
+        const today = dateKey();
+        const last = state.learningStats.lastStudyDate;
+        state.learningStats.totalSessions += 1;
+        if (last !== today) {
+          state.learningStats.streak =
+            daysBetween(last, today) === 1
+              ? state.learningStats.streak + 1
+              : 1;
+          state.learningStats.lastStudyDate = today;
+        }
+        if (!state.learningStats.daily[today]) {
+          state.learningStats.daily[today] = {
+            correct: 0,
+            wrong: 0,
+            seconds: 0,
+            learned: 0,
+          };
+        }
+        saveLearningStats();
+      };
+
+      const saveStudyTime = () => {
+        const elapsed = Math.max(
+          0,
+          Math.round((Date.now() - state.sessionStartedAt) / 1000),
+        );
+        if (!elapsed) return;
+        const today = dateKey();
+        if (!state.learningStats.daily[today]) {
+          state.learningStats.daily[today] = {
+            correct: 0,
+            wrong: 0,
+            seconds: 0,
+            learned: 0,
+          };
+        }
+        state.learningStats.studyTimeSeconds += elapsed;
+        state.learningStats.daily[today].seconds =
+          (state.learningStats.daily[today].seconds || 0) + elapsed;
+        state.sessionStartedAt = Date.now();
+        saveLearningStats();
+      };
+
+      const formatDuration = (seconds) => {
+        const total = Math.max(0, Number(seconds) || 0);
+        const hours = Math.floor(total / 3600);
+        const minutes = Math.floor((total % 3600) / 60);
+        if (hours) return `${hours} giờ ${minutes} phút`;
+        return `${minutes} phút`;
+      };
+
       const loadTheme = () => {
         try {
           const saved = localStorage.getItem(THEME_KEY);
@@ -1111,7 +1428,22 @@
       const markCardViewed = (card) => {
         if (!card) return;
         const id = getCardId(card);
+        const wasViewed = state.viewedCards.has(id);
         state.viewedCards.add(id);
+        if (!wasViewed) {
+          const today = dateKey();
+          if (!state.learningStats.daily[today]) {
+            state.learningStats.daily[today] = {
+              correct: 0,
+              wrong: 0,
+              seconds: 0,
+              learned: 0,
+            };
+          }
+          state.learningStats.daily[today].learned =
+            (state.learningStats.daily[today].learned || 0) + 1;
+          saveLearningStats();
+        }
         saveViewed();
       };
 
@@ -1161,6 +1493,52 @@
           state.progress[type] = (state.progress[type] || 0) + 1;
           saveProgress();
         }
+      };
+
+      const trackAnswerResult = (card, isCorrect) => {
+        if (!card) return;
+        const today = dateKey();
+        const id = getCardId(card);
+        if (!state.learningStats.daily[today]) {
+          state.learningStats.daily[today] = {
+            correct: 0,
+            wrong: 0,
+            seconds: 0,
+            learned: 0,
+          };
+        }
+        if (!state.learningStats.cardStats[id]) {
+          state.learningStats.cardStats[id] = {
+            front: card.front,
+            back: card.back,
+            lesson: card.lesson,
+            correct: 0,
+            wrong: 0,
+          };
+        }
+        const stat = state.learningStats.cardStats[id];
+        stat.front = card.front;
+        stat.back = card.back;
+        stat.lesson = card.lesson;
+        if (isCorrect) {
+          state.learningStats.correctAnswers += 1;
+          state.learningStats.daily[today].correct =
+            (state.learningStats.daily[today].correct || 0) + 1;
+          stat.correct += 1;
+        } else {
+          state.learningStats.wrongAnswers += 1;
+          state.learningStats.daily[today].wrong =
+            (state.learningStats.daily[today].wrong || 0) + 1;
+          stat.wrong += 1;
+        }
+        if (
+          stat.correct >= 2 &&
+          stat.correct >= stat.wrong &&
+          !state.learningStats.masteredCards.includes(id)
+        ) {
+          state.learningStats.masteredCards.push(id);
+        }
+        saveLearningStats();
       };
 
       const normalize = (value) =>
@@ -1281,6 +1659,7 @@
         state.flipped = false;
         state.quiz = null;
         state.match = null;
+        state.miniExam = null;
         state.practiceCounts = {};
       };
 
@@ -1309,6 +1688,7 @@
         state.flipped = false;
         state.quiz = null;
         state.match = null;
+        state.miniExam = null;
         renderLessonOptions();
         render();
       };
@@ -1417,6 +1797,15 @@
             : state.view === "match"
               ? "Ván mới"
               : "Lật thẻ";
+
+        if (state.view === "miniExam") {
+          el.flipButton.textContent = state.miniExam?.submitted
+            ? "Làm lại"
+            : "Nộp bài";
+        }
+        if (state.view === "progress") {
+          el.flipButton.textContent = "Làm mới";
+        }
 
         if (!cards.length) {
           el.lessonTitle.textContent = "Không có thẻ";
@@ -1534,6 +1923,90 @@
         return { card, correct, choices, selected: "", answered: false };
       };
 
+      const miniExamTypeLabel = (type) => {
+        if (type === "zh-vi") return "Chọn nghĩa";
+        if (type === "vi-zh") return "Chọn chữ Hán";
+        return "Chọn pinyin";
+      };
+
+      const miniExamPrompt = (card, type) => {
+        if (type === "zh-vi") return card.front;
+        if (type === "vi-zh") return card.back;
+        return card.front;
+      };
+
+      const miniExamAnswer = (card, type) => {
+        if (type === "zh-vi") return card.back;
+        if (type === "vi-zh") return card.front;
+        return card.pinyin;
+      };
+
+      const createMiniQuestion = (card, type, sourceCards) => {
+        const correct = miniExamAnswer(card, type);
+        const wrongPool = sourceCards
+          .map((item) => miniExamAnswer(item, type))
+          .filter((value) => value && value !== correct);
+        const choices = shuffleArray([
+          correct,
+          ...shuffleArray([...new Set(wrongPool)]).slice(0, 3),
+        ]);
+        return {
+          card,
+          type,
+          prompt: miniExamPrompt(card, type),
+          correct,
+          choices,
+        };
+      };
+
+      const createMiniExam = () => {
+        const lessonCards = getPracticeEligibleCards().filter(
+          (card) => card.front && card.back,
+        );
+        const sourceCards = allCards().filter((card) => card.front && card.back);
+        const cards = shuffleArray(lessonCards).slice(0, 10);
+        const questions = cards
+          .map((card, index) => {
+            const types = ["zh-vi", "vi-zh"];
+            if (card.pinyin) types.push("pinyin");
+            const type = types[index % types.length];
+            return createMiniQuestion(card, type, sourceCards);
+          })
+          .filter((question) => question.correct && question.choices.length > 1);
+        questions.forEach((question) => {
+          incrementPracticeCount(question.card);
+          markCardViewed(question.card);
+        });
+        return {
+          questions,
+          answers: Array(questions.length).fill(""),
+          currentIndex: 0,
+          submitted: false,
+          tracked: false,
+        };
+      };
+
+      const miniExamScore = (exam) =>
+        exam.questions.reduce(
+          (sum, question, index) =>
+            sum + (exam.answers[index] === question.correct ? 1 : 0),
+          0,
+        );
+
+      const submitMiniExam = () => {
+        if (!state.miniExam || state.miniExam.submitted) return;
+        state.miniExam.submitted = true;
+        if (state.miniExam.tracked) return;
+        state.miniExam.questions.forEach((question, index) => {
+          trackAnswerResult(
+            question.card,
+            state.miniExam.answers[index] === question.correct,
+          );
+        });
+        state.miniExam.tracked = true;
+        saveLearningStats();
+      };
+
       const renderQuiz = () => {
         if (!renderFrame()) return;
         if (!state.quiz) state.quiz = createQuiz();
@@ -1597,6 +2070,319 @@
           ${hanziiSection}
         </div>
       `;
+      };
+
+      const renderMiniExam = () => {
+        if (!renderFrame()) return;
+        if (!state.miniExam) state.miniExam = createMiniExam();
+        const exam = state.miniExam;
+        if (!exam.questions.length) {
+          el.progressText.textContent = "Thi thử HSK mini";
+          el.cardIndex.textContent = "0 / 0";
+          el.cardContent.innerHTML =
+            '<div class="practice-panel"><div class="field">Chưa có đủ dữ liệu để tạo đề thi mini.</div></div>';
+          return;
+        }
+
+        const score = miniExamScore(exam);
+        const percent =
+          Math.round(
+            ((exam.currentIndex + (exam.submitted ? 1 : 0)) /
+              Math.max(exam.questions.length, 1)) *
+              100,
+          ) || 0;
+        el.progressText.textContent = exam.submitted
+          ? `Kết quả ${score}/${exam.questions.length}`
+          : `Thi thử HSK mini ${exam.currentIndex + 1}/${exam.questions.length}`;
+        el.cardIndex.textContent = exam.submitted
+          ? `${score}/${exam.questions.length}`
+          : `${exam.currentIndex + 1} / ${exam.questions.length}`;
+
+        if (exam.submitted) {
+          const review = exam.questions
+            .map((question, index) => {
+              const userAnswer = exam.answers[index] || "Chưa chọn";
+              const correct = userAnswer === question.correct;
+              return `
+                <div class="mini-review-item ${correct ? "correct" : "wrong"}">
+                  <p class="mini-review-prompt">${index + 1}. ${escapeHtml(question.prompt)}</p>
+                  <p class="mini-review-answer">Bạn chọn: ${escapeHtml(userAnswer)}</p>
+                  <p class="mini-review-answer">Đáp án: ${escapeHtml(question.correct)}</p>
+                </div>
+              `;
+            })
+            .join("");
+          el.cardContent.innerHTML = `
+            <div class="practice-panel">
+              <div class="mini-exam-header">
+                <div class="mini-exam-score">
+                  <strong>Điểm: ${score}/${exam.questions.length}</strong>
+                  <span>${Math.round((score / exam.questions.length) * 100)}%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${Math.round((score / exam.questions.length) * 100)}%"></div>
+                </div>
+              </div>
+              <div class="mini-exam-review">${review}</div>
+              <div class="nav-buttons">
+                <button class="tool-button primary" data-mini-restart type="button">Làm đề mới</button>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        const question = exam.questions[exam.currentIndex];
+        const selected = exam.answers[exam.currentIndex];
+        const options = question.choices
+          .map(
+            (choice) => `
+              <button
+                class="option-button ${selected === choice ? "selected" : ""}"
+                data-mini-choice="${escapeHtml(choice)}"
+                type="button"
+              >${escapeHtml(choice)}</button>
+            `,
+          )
+          .join("");
+        const answeredCount = exam.answers.filter(Boolean).length;
+        const questionClass = question.type === "vi-zh" ? "meaning-prompt" : "";
+        el.cardContent.innerHTML = `
+          <div class="practice-panel">
+            <div class="mini-exam-header">
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${percent}%"></div>
+              </div>
+              <div class="mini-exam-meta">
+                <span>Câu ${exam.currentIndex + 1}/${exam.questions.length}</span>
+                <span>Đã chọn ${answeredCount}/${exam.questions.length}</span>
+              </div>
+            </div>
+            <span class="mini-exam-type">${miniExamTypeLabel(question.type)}</span>
+            <p class="quiz-question ${questionClass}" lang="${question.type === "vi-zh" ? "vi" : "zh-Hans"}">${escapeHtml(question.prompt)}</p>
+            <div class="option-grid">${options}</div>
+            <div class="feedback">${selected ? "Đã ghi nhận đáp án." : "Chọn một đáp án để tiếp tục."}</div>
+            <div class="nav-buttons">
+              <button class="tool-button" data-mini-submit type="button">Nộp bài</button>
+              <button class="tool-button" data-mini-restart type="button">Làm đề mới</button>
+            </div>
+          </div>
+        `;
+      };
+
+      const destroyProgressCharts = () => {
+        Object.values(state.chartInstances).forEach((chart) => chart.destroy());
+        state.chartInstances = {};
+      };
+
+      const getProgressSummary = () => {
+        const cards = allCards();
+        const ids = cards.map(getCardId);
+        const idSet = new Set(ids);
+        const learnedIds = ids.filter((id) => state.viewedCards.has(id));
+        const masteredIds = state.learningStats.masteredCards.filter((id) =>
+          idSet.has(id),
+        );
+        const wrongReviewIds = Object.entries(state.learningStats.cardStats)
+          .filter(([, stat]) => (stat.wrong || 0) > (stat.correct || 0))
+          .map(([id]) => id)
+          .filter((id) => idSet.has(id));
+        const reviewIds = new Set([
+          ...ids.filter((id) => state.difficultCards.has(id)),
+          ...wrongReviewIds,
+        ]);
+        const answerTotal =
+          state.learningStats.correctAnswers + state.learningStats.wrongAnswers;
+        const memoryRate = answerTotal
+          ? Math.round((state.learningStats.correctAnswers / answerTotal) * 100)
+          : 0;
+        return {
+          totalCards: cards.length,
+          learned: learnedIds.length,
+          mastered: masteredIds.length,
+          review: reviewIds.size,
+          correct: state.learningStats.correctAnswers,
+          wrong: state.learningStats.wrongAnswers,
+          memoryRate,
+        };
+      };
+
+      const inferHskLevel = (card) => {
+        const scriptLevel = [
+          ...document.querySelectorAll("script[src]"),
+        ]
+          .map((script) => script.getAttribute("src") || "")
+          .join(" ");
+        const text = `${card.lesson || ""} ${document.title || ""} ${scriptLevel}`;
+        const match = text.match(/hsk\s*([1-6])/i);
+        return match ? `HSK ${match[1]}` : "HSK";
+      };
+
+      const getHskCompletionRows = () => {
+        const groups = new Map();
+        allCards().forEach((card) => {
+          const level = inferHskLevel(card);
+          if (!groups.has(level)) groups.set(level, []);
+          groups.get(level).push(card);
+        });
+        return [...groups.entries()]
+          .sort(([a], [b]) => a.localeCompare(b, "vi"))
+          .map(([level, cards]) => {
+            const learned = cards.filter((card) =>
+              state.viewedCards.has(getCardId(card)),
+            ).length;
+            const percent = Math.round(
+              (learned / Math.max(cards.length, 1)) * 100,
+            );
+            return { level, learned, total: cards.length, percent };
+          });
+      };
+
+      const getTopWrongWords = () =>
+        Object.values(state.learningStats.cardStats)
+          .filter((stat) => (stat.wrong || 0) > 0)
+          .sort(
+            (a, b) =>
+              (b.wrong || 0) - (a.wrong || 0) ||
+              (a.correct || 0) - (b.correct || 0),
+          )
+          .slice(0, 20);
+
+      const renderProgressCharts = (summary) => {
+        destroyProgressCharts();
+        if (!window.Chart) return;
+        const dailyEntries = Object.entries(state.learningStats.daily).sort(
+          ([a], [b]) => a.localeCompare(b),
+        );
+        const dailyCanvas = document.querySelector("#studyChart");
+        const memoryCanvas = document.querySelector("#memoryChart");
+        if (dailyCanvas) {
+          state.chartInstances.study = new Chart(dailyCanvas, {
+            type: "bar",
+            data: {
+              labels: dailyEntries.map(([date]) => date.slice(5)),
+              datasets: [
+                {
+                  label: "Từ đã học",
+                  data: dailyEntries.map(([, day]) => day.learned || 0),
+                  backgroundColor: "#6a7fd1",
+                },
+                {
+                  label: "Đúng",
+                  data: dailyEntries.map(([, day]) => day.correct || 0),
+                  backgroundColor: "#4d8b7c",
+                },
+                {
+                  label: "Sai",
+                  data: dailyEntries.map(([, day]) => day.wrong || 0),
+                  backgroundColor: "#b07a3f",
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: "bottom" } },
+              scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+            },
+          });
+        }
+        if (memoryCanvas) {
+          state.chartInstances.memory = new Chart(memoryCanvas, {
+            type: "doughnut",
+            data: {
+              labels: ["Đã học", "Đã thuộc", "Cần ôn", "Chưa học"],
+              datasets: [
+                {
+                  data: [
+                    summary.learned,
+                    summary.mastered,
+                    summary.review,
+                    Math.max(
+                      summary.totalCards - summary.learned,
+                      0,
+                    ),
+                  ],
+                  backgroundColor: [
+                    "#6a7fd1",
+                    "#4d8b7c",
+                    "#b07a3f",
+                    "#dbe4e8",
+                  ],
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: "bottom" } },
+            },
+          });
+        }
+      };
+
+      const renderProgressDashboard = () => {
+        if (!renderFrame()) return;
+        saveStudyTime();
+        const summary = getProgressSummary();
+        const hskRows = getHskCompletionRows()
+          .map(
+            (row) => `
+              <div class="level-row">
+                <strong>${escapeHtml(row.level)}</strong>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${row.percent}%"></div>
+                </div>
+                <span>${row.learned}/${row.total} (${row.percent}%)</span>
+              </div>
+            `,
+          )
+          .join("");
+        const wrongRows = getTopWrongWords()
+          .map(
+            (stat) => `
+              <div class="wrong-word-item">
+                <strong lang="zh-Hans">${escapeHtml(stat.front)}</strong>
+                <span>${escapeHtml(stat.back || stat.lesson || "")}</span>
+                <em>Sai ${stat.wrong || 0}</em>
+              </div>
+            `,
+          )
+          .join("");
+        el.lessonTitle.textContent = "📊 Tiến độ học tập";
+        el.progressText.textContent = `${summary.learned}/${summary.totalCards} từ đã học`;
+        el.cardLesson.textContent = "Dashboard";
+        el.cardIndex.textContent = `${summary.memoryRate}% ghi nhớ`;
+        el.cardContent.innerHTML = `
+          <div class="progress-dashboard">
+            <div class="dashboard-grid">
+              <div class="dashboard-card"><strong>${summary.learned}</strong><span>Số từ đã học</span></div>
+              <div class="dashboard-card"><strong>${summary.mastered}</strong><span>Số từ đã thuộc</span></div>
+              <div class="dashboard-card"><strong>${summary.review}</strong><span>Số từ cần ôn tập</span></div>
+              <div class="dashboard-card"><strong>${summary.correct}</strong><span>Số câu trả lời đúng</span></div>
+              <div class="dashboard-card"><strong>${summary.wrong}</strong><span>Số câu trả lời sai</span></div>
+              <div class="dashboard-card"><strong>${formatDuration(state.learningStats.studyTimeSeconds)}</strong><span>Thời gian học tập</span></div>
+              <div class="dashboard-card"><strong>${summary.memoryRate}%</strong><span>Tỷ lệ ghi nhớ</span></div>
+              <div class="dashboard-card"><strong>${state.learningStats.streak}</strong><span>Chuỗi ngày học liên tiếp</span></div>
+              <div class="dashboard-card"><strong>${state.learningStats.totalSessions}</strong><span>Tổng số phiên học</span></div>
+            </div>
+            <div class="dashboard-section">
+              <h2>Hoàn thành theo cấp HSK</h2>
+              ${hskRows || '<div class="field">Chưa có dữ liệu cấp HSK.</div>'}
+            </div>
+            <div class="chart-grid">
+              <div class="chart-box"><canvas id="studyChart"></canvas></div>
+              <div class="chart-box"><canvas id="memoryChart"></canvas></div>
+            </div>
+            <div class="dashboard-section">
+              <h2>Top 20 từ vựng hay trả lời sai</h2>
+              <div class="wrong-word-list">
+                ${wrongRows || '<div class="field">Chưa có lịch sử trả lời sai.</div>'}
+              </div>
+            </div>
+          </div>
+        `;
+        renderProgressCharts(summary);
       };
 
       const createMatch = () => {
@@ -1712,6 +2498,14 @@
           renderMatch();
           return;
         }
+        if (state.view === "miniExam") {
+          renderMiniExam();
+          return;
+        }
+        if (state.view === "progress") {
+          renderProgressDashboard();
+          return;
+        }
         if (state.view === "manage") {
           renderManage();
           return;
@@ -1739,6 +2533,25 @@
           render();
           return;
         }
+        if (state.view === "miniExam") {
+          const exam = state.miniExam || createMiniExam();
+          if (!exam.questions.length) {
+            state.miniExam = exam;
+          } else if (exam.submitted) {
+            state.miniExam = createMiniExam();
+          } else {
+            exam.currentIndex =
+              (exam.currentIndex + step + exam.questions.length) %
+              exam.questions.length;
+            state.miniExam = exam;
+          }
+          render();
+          return;
+        }
+        if (state.view === "progress") {
+          render();
+          return;
+        }
         nextCard(step);
       };
 
@@ -1750,6 +2563,15 @@
         }
         if (state.view === "match") {
           state.match = createMatch();
+          render();
+          return;
+        }
+        if (state.view === "miniExam") {
+          state.miniExam = createMiniExam();
+          render();
+          return;
+        }
+        if (state.view === "progress") {
           render();
           return;
         }
@@ -1924,6 +2746,7 @@
         state.flipped = false;
         state.quiz = null;
         state.match = null;
+        state.miniExam = null;
         render();
       });
       el.showPinyin.addEventListener("click", () => {
@@ -1940,6 +2763,7 @@
           state.flipped = false;
           state.quiz = null;
           state.match = null;
+          state.miniExam = null;
           state.practiceCounts = {};
           render();
         });
@@ -1965,6 +2789,7 @@
         state.practiceCounts = {};
         state.quiz = null;
         state.match = null;
+        state.miniExam = null;
         render();
       });
       el.reviewDifficultButton?.addEventListener("click", () => {
@@ -1973,6 +2798,7 @@
         state.practiceCounts = {};
         state.quiz = null;
         state.match = null;
+        state.miniExam = null;
         render();
       });
       el.lightThemeButton?.addEventListener("click", () => {
@@ -2002,6 +2828,16 @@
         if (state.view === "match") {
           state.match = createMatch();
           incrementProgress("matches");
+        }
+        if (state.view === "miniExam") {
+          if (state.miniExam?.submitted) {
+            state.miniExam = createMiniExam();
+          } else if (state.miniExam?.questions.length) {
+            submitMiniExam();
+          }
+        }
+        if (state.view === "progress") {
+          saveStudyTime();
         }
         render();
       });
@@ -2062,6 +2898,33 @@
         if (quizButton && state.quiz && !state.quiz.answered) {
           state.quiz.selected = quizButton.dataset.quizChoice;
           state.quiz.answered = true;
+          trackAnswerResult(
+            state.quiz.card,
+            state.quiz.selected === state.quiz.correct,
+          );
+          render();
+          return;
+        }
+        const miniChoiceButton = event.target.closest("[data-mini-choice]");
+        if (
+          miniChoiceButton &&
+          state.miniExam &&
+          !state.miniExam.submitted
+        ) {
+          state.miniExam.answers[state.miniExam.currentIndex] =
+            miniChoiceButton.dataset.miniChoice;
+          render();
+          return;
+        }
+        const miniSubmitButton = event.target.closest("[data-mini-submit]");
+        if (miniSubmitButton && state.miniExam) {
+          submitMiniExam();
+          render();
+          return;
+        }
+        const miniRestartButton = event.target.closest("[data-mini-restart]");
+        if (miniRestartButton) {
+          state.miniExam = createMiniExam();
           render();
           return;
         }
@@ -2126,6 +2989,9 @@
         button.addEventListener("click", () => {
           state.filterStatus = button.dataset.filterStatus;
           state.cardIndex = 0;
+          state.quiz = null;
+          state.match = null;
+          state.miniExam = null;
           saveFilter();
           render();
         });
@@ -2133,6 +2999,9 @@
       el.filterPracticeCountSelect.addEventListener("change", () => {
         state.filterPracticeCount = el.filterPracticeCountSelect.value;
         state.cardIndex = 0;
+        state.quiz = null;
+        state.match = null;
+        state.miniExam = null;
         saveFilter();
         render();
       });
@@ -2144,8 +3013,17 @@
           if (state.view === "flashcard") state.flipped = !state.flipped;
           if (state.view === "quiz") state.quiz = createQuiz();
           if (state.view === "match") state.match = createMatch();
+          if (state.view === "miniExam") {
+            if (state.miniExam?.submitted) state.miniExam = createMiniExam();
+            else if (state.miniExam?.questions.length)
+              submitMiniExam();
+          }
           render();
         }
+      });
+      window.addEventListener("pagehide", saveStudyTime);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") saveStudyTime();
       });
 
       if (window.speechSynthesis) {
@@ -2158,6 +3036,8 @@
         loadDifficult();
         loadViewed();
         loadProgress();
+        loadLearningStats();
+        registerStudySession();
         loadTheme();
         loadFilter();
         const saved = localStorage.getItem(STORAGE_KEY);

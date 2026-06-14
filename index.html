@@ -1,908 +1,1257 @@
 <!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>HSK Flashcards</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="hsk5_flashcards_data.js"></script>
-  <style>
-    :root {
-      color-scheme: light;
-      --ink: #172026;
-      --muted: #5c6975;
-      --line: #d7dee4;
-      --paper: #ffffff;
-      --surface: #f5f7f9;
-      --accent: #4255ff;
-      --accent-strong: #2f3fd8;
-      --accent-soft: #eef0ff;
-      --success: #0f766e;
-      --warn: #b45309;
-      --shadow: 0 18px 44px rgba(46, 56, 86, 0.13);
-    }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HSK Flashcards</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="hsk5_flashcards_data.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #24313a;
+        --muted: #6a7884;
+        --line: #dbe4e8;
+        --paper: #fffdf8;
+        --surface: #f4f1ea;
+        --accent: #6a7fd1;
+        --accent-strong: #5166b8;
+        --accent-soft: #eef2fb;
+        --success: #4d8b7c;
+        --warn: #b07a3f;
+        --shadow: 0 18px 40px rgba(75, 88, 106, 0.1);
+      }
 
-    * {
-      box-sizing: border-box;
-    }
+      * {
+        box-sizing: border-box;
+      }
 
-    body {
-      margin: 0;
-      background: #f6f7fb;
-      color: var(--ink);
-      font-family:
-        "Noto Sans",
-        "Noto Sans SC",
-        "Noto Sans TC",
-        "Segoe UI",
-        "Microsoft YaHei",
-        "PingFang SC",
-        "Arial Unicode MS",
-        Arial,
-        sans-serif;
-      line-height: 1.5;
-    }
+      body {
+        margin: 0;
+        background: linear-gradient(180deg, #f6f3ee 0%, #eef3f1 100%);
+        color: var(--ink);
+        font-family:
+          "Noto Sans", "Noto Sans SC", "Noto Sans TC", "Segoe UI",
+          "Microsoft YaHei", "PingFang SC", "Arial Unicode MS", Arial,
+          sans-serif;
+        line-height: 1.5;
+      }
 
-    button,
-    input,
-    select {
-      font: inherit;
-    }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
 
-    .app {
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 320px minmax(0, 1fr);
-    }
-
-    .sidebar {
-      background: #ffffff;
-      border-right: 1px solid var(--line);
-      padding: 22px;
-      overflow: auto;
-    }
-
-    .brand {
-      margin: 0 0 18px;
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: 0;
-      color: var(--accent);
-    }
-
-    .section {
-      padding: 16px 0;
-      border-top: 1px solid var(--line);
-    }
-
-    .section:first-of-type {
-      border-top: 0;
-      padding-top: 0;
-    }
-
-    label,
-    .label {
-      display: block;
-      margin-bottom: 7px;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    select,
-    input[type="file"] {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: #ffffff;
-      color: var(--ink);
-      padding: 10px 11px;
-    }
-
-    .segmented {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-    }
-
-    .mode-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 6px;
-    }
-
-    .chip,
-    .tool-button {
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: #ffffff;
-      color: var(--ink);
-      padding: 9px 10px;
-      cursor: pointer;
-      transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
-    }
-
-    .chip[aria-pressed="true"],
-    .tool-button.primary {
-      border-color: var(--accent);
-      background: var(--accent);
-      color: #ffffff;
-    }
-
-    .tool-button.icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      min-width: 42px;
-    }
-
-    .tool-button.icon svg {
-      width: 18px;
-      height: 18px;
-      stroke: currentColor;
-      stroke-width: 2.2;
-      fill: none;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .stat {
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      padding: 10px;
-      background: #fbfcfd;
-    }
-
-    .stat strong {
-      display: block;
-      font-size: 22px;
-      line-height: 1.1;
-    }
-
-    .stat span {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 3px;
-    }
-
-    .main {
-      display: grid;
-      grid-template-rows: auto minmax(0, 1fr) auto;
-      min-width: 0;
-      padding: 28px;
-      gap: 20px;
-    }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .title-block h1 {
-      margin: 0;
-      font-size: clamp(26px, 4vw, 42px);
-      letter-spacing: 0;
-    }
-
-    .title-block p {
-      margin: 4px 0 0;
-      color: var(--muted);
-    }
-
-    .actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .stage {
-      display: grid;
-      place-items: center;
-      min-height: 440px;
-    }
-
-    .card {
-      width: min(760px, 100%);
-      min-height: 390px;
-      background: var(--paper);
-      border: 0;
-      border-bottom: 5px solid #d9dde8;
-      border-radius: 10px;
-      box-shadow: var(--shadow);
-      padding: clamp(22px, 4vw, 42px);
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      gap: 18px;
-    }
-
-    .card-meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .hanzi {
-      font-family:
-        "Noto Sans SC",
-        "Noto Sans TC",
-        "Noto Sans",
-        "Microsoft YaHei",
-        "PingFang SC",
-        "SimSun",
-        sans-serif;
-      font-size: clamp(44px, 9vw, 88px);
-      line-height: 1.12;
-      font-weight: 700;
-      overflow-wrap: anywhere;
-      text-align: center;
-      letter-spacing: 0;
-    }
-
-    .card-content {
-      display: grid;
-      align-content: center;
-      gap: 14px;
-      min-width: 0;
-    }
-
-    .field {
-      padding: 13px 15px;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: #fbfcfd;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
-
-    .field strong {
-      display: block;
-      margin-bottom: 3px;
-      color: var(--muted);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .pinyin {
-      font-size: clamp(22px, 3.4vw, 34px);
-      text-align: center;
-      color: var(--accent-strong);
-    }
-
-    .meaning {
-      font-size: clamp(20px, 3vw, 30px);
-      text-align: center;
-    }
-
-    .example {
-      font-family:
-        "Noto Sans",
-        "Noto Sans SC",
-        "Noto Sans TC",
-        "Segoe UI",
-        sans-serif;
-      font-size: 18px;
-    }
-
-    .card-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .nav-buttons {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .hint {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .error {
-      margin-top: 10px;
-      color: var(--warn);
-      font-size: 13px;
-      white-space: pre-wrap;
-    }
-
-    .practice-panel {
-      width: min(860px, 100%);
-      background: var(--paper);
-      border: 0;
-      border-radius: 10px;
-      box-shadow: var(--shadow);
-      padding: clamp(20px, 4vw, 36px);
-    }
-
-    .quiz-question {
-      margin: 0 0 20px;
-      text-align: center;
-      font-size: clamp(30px, 6vw, 58px);
-      font-weight: 800;
-      overflow-wrap: anywhere;
-      letter-spacing: 0;
-    }
-
-    .quiz-question.meaning-prompt {
-      font-size: clamp(24px, 4vw, 40px);
-      color: var(--accent-strong);
-    }
-
-    .option-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .option-button,
-    .match-button {
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: #ffffff;
-      color: var(--ink);
-      padding: 13px 14px;
-      cursor: pointer;
-      text-align: left;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
-
-    .option-button.correct,
-    .match-button.matched {
-      border-color: var(--success);
-      background: #dff3ef;
-    }
-
-    .option-button.wrong {
-      border-color: #dc2626;
-      background: #fee2e2;
-    }
-
-    .feedback {
-      min-height: 28px;
-      margin-top: 14px;
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    .match-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .match-column {
-      display: grid;
-      gap: 8px;
-      align-content: start;
-    }
-
-    .match-column h2 {
-      margin: 0 0 4px;
-      color: var(--muted);
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .match-button.selected {
-      border-color: var(--accent);
-      box-shadow: inset 0 0 0 2px rgba(15, 118, 110, 0.18);
-    }
-
-    .match-button[disabled],
-    .option-button[disabled] {
-      cursor: default;
-    }
-
-    .editor-panel {
-      width: min(1080px, 100%);
-      background: var(--paper);
-      border-radius: 10px;
-      box-shadow: var(--shadow);
-      padding: clamp(18px, 3vw, 28px);
-    }
-
-    .editor-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-
-    .editor-list {
-      display: grid;
-      gap: 12px;
-      max-height: 68vh;
-      overflow: auto;
-      padding-right: 4px;
-    }
-
-    .edit-row {
-      display: grid;
-      grid-template-columns: minmax(120px, 0.9fr) minmax(120px, 0.9fr) minmax(140px, 1.1fr) minmax(160px, 1.4fr) auto;
-      gap: 8px;
-      align-items: start;
-      padding: 10px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fbfcff;
-    }
-
-    .edit-row input,
-    .edit-row textarea,
-    .lesson-name-input {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: #ffffff;
-      color: var(--ink);
-      padding: 9px 10px;
-      font: inherit;
-    }
-
-    .edit-row textarea {
-      min-height: 72px;
-      resize: vertical;
-    }
-
-    .lesson-name-input {
-      max-width: 320px;
-      font-weight: 700;
-    }
-
-    @media (max-width: 880px) {
       .app {
-        grid-template-columns: 1fr;
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
       }
 
       .sidebar {
-        border-right: 0;
-        border-bottom: 1px solid var(--line);
+        background: rgba(255, 253, 248, 0.92);
+        border-right: 1px solid var(--line);
+        padding: 22px;
+        overflow: auto;
+        backdrop-filter: blur(6px);
+      }
+
+      .brand {
+        margin: 0 0 18px;
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: 0;
+        color: var(--accent);
+      }
+
+      .section {
+        padding: 16px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .section:first-of-type {
+        border-top: 0;
+        padding-top: 0;
+      }
+
+      .progress-section {
+        padding: 12px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #f0f0f0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 6px;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: var(--accent);
+        transition: width 0.3s ease;
+      }
+
+      .progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .flashcard-progress {
+        margin-top: 10px;
+        padding: 8px;
+        background: var(--surface);
+        border-radius: 6px;
+      }
+
+      .flashcard-progress .progress-bar {
+        margin-bottom: 4px;
+      }
+
+      label,
+      .label {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      select,
+      input[type="file"] {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: #ffffff;
+        color: var(--ink);
+        padding: 10px 11px;
+      }
+
+      .segmented {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+
+      .mode-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .chip,
+      .tool-button {
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: #ffffff;
+        color: var(--ink);
+        padding: 9px 10px;
+        cursor: pointer;
+        transition:
+          border-color 0.16s ease,
+          background 0.16s ease,
+          color 0.16s ease;
+      }
+
+      .chip[aria-pressed="true"],
+      .tool-button.primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #ffffff;
+      }
+
+      .tool-button.icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-width: 42px;
+      }
+
+      .tool-button.icon svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .stat {
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 10px;
+        background: #fbfcfd;
+      }
+
+      .stat strong {
+        display: block;
+        font-size: 22px;
+        line-height: 1.1;
+      }
+
+      .stat span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 3px;
       }
 
       .main {
-        padding: 20px;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        min-width: 0;
+        padding: 28px;
+        gap: 20px;
       }
 
       .topbar {
-        align-items: stretch;
-        flex-direction: column;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .title-block h1 {
+        margin: 0;
+        font-size: clamp(26px, 4vw, 42px);
+        letter-spacing: 0;
+      }
+
+      .title-block p {
+        margin: 4px 0 0;
+        color: var(--muted);
       }
 
       .actions {
-        justify-content: flex-start;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
       }
 
-      .option-grid,
-      .match-grid,
+      .stage {
+        display: grid;
+        place-items: center;
+        min-height: 440px;
+      }
+
+      .card {
+        width: min(760px, 100%);
+        min-height: 390px;
+        background: var(--paper);
+        border: 0;
+        border-bottom: 5px solid #d9dde8;
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        padding: clamp(22px, 4vw, 42px);
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 18px;
+      }
+
+      .card-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .hanzi {
+        font-family:
+          "Noto Sans SC", "Noto Sans TC", "Noto Sans", "Microsoft YaHei",
+          "PingFang SC", "SimSun", sans-serif;
+        font-size: clamp(44px, 9vw, 88px);
+        line-height: 1.12;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+        text-align: center;
+        letter-spacing: 0;
+      }
+
+      .card-content {
+        display: grid;
+        align-content: center;
+        gap: 14px;
+        min-width: 0;
+      }
+
+      .field {
+        padding: 13px 15px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: #fbfcfd;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      .field strong {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .pinyin {
+        font-size: clamp(22px, 3.4vw, 34px);
+        text-align: center;
+        color: var(--accent-strong);
+      }
+
+      .meaning {
+        font-size: clamp(20px, 3vw, 30px);
+        text-align: center;
+      }
+
+      .example {
+        font-family:
+          "Noto Sans", "Noto Sans SC", "Noto Sans TC", "Segoe UI", sans-serif;
+        font-size: 18px;
+      }
+
+      .card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .nav-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .error {
+        margin-top: 10px;
+        color: var(--warn);
+        font-size: 13px;
+        white-space: pre-wrap;
+      }
+
+      .practice-panel {
+        width: min(860px, 100%);
+        background: var(--paper);
+        border: 0;
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        padding: clamp(20px, 4vw, 36px);
+      }
+
+      .quiz-question {
+        margin: 0 0 20px;
+        text-align: center;
+        font-size: clamp(30px, 6vw, 58px);
+        font-weight: 800;
+        overflow-wrap: anywhere;
+        letter-spacing: 0;
+      }
+
+      .quiz-question.meaning-prompt {
+        font-size: clamp(24px, 4vw, 40px);
+        color: var(--accent-strong);
+      }
+
+      .option-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .option-button,
+      .match-button {
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: #ffffff;
+        color: var(--ink);
+        padding: 13px 14px;
+        cursor: pointer;
+        text-align: left;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      .option-button.correct,
+      .match-button.matched {
+        border-color: var(--success);
+        background: #dff3ef;
+      }
+
+      .option-button.wrong {
+        border-color: #dc2626;
+        background: #fee2e2;
+      }
+
+      .feedback {
+        min-height: 28px;
+        margin-top: 14px;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .match-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .match-column {
+        display: grid;
+        gap: 8px;
+        align-content: start;
+      }
+
+      .match-column h2 {
+        margin: 0 0 4px;
+        color: var(--muted);
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .match-button.selected {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 2px rgba(15, 118, 110, 0.18);
+      }
+
+      .match-button[disabled],
+      .option-button[disabled] {
+        cursor: default;
+      }
+
+      .editor-panel {
+        width: min(1080px, 100%);
+        background: var(--paper);
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        padding: clamp(18px, 3vw, 28px);
+      }
+
+      .editor-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+
+      .editor-list {
+        display: grid;
+        gap: 12px;
+        max-height: 68vh;
+        overflow: auto;
+        padding-right: 4px;
+      }
+
       .edit-row {
-        grid-template-columns: 1fr;
+        display: grid;
+        grid-template-columns:
+          minmax(120px, 0.9fr) minmax(120px, 0.9fr) minmax(140px, 1.1fr)
+          minmax(160px, 1.4fr) auto;
+        gap: 8px;
+        align-items: start;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcff;
       }
-    }
-  </style>
-</head>
-<body>
-  <div class="app">
-    <aside class="sidebar">
-      <h1 class="brand">中文 Flashcards</h1>
 
-      <div class="section">
-        <label for="lessonSelect">Bài học</label>
-        <select id="lessonSelect"></select>
-      </div>
-
-      <div class="section">
-        <span class="label">Kiểu học</span>
-        <div class="mode-grid">
-          <button class="chip" data-view="flashcard" type="button" aria-pressed="true">Flashcard</button>
-          <button class="chip" data-view="quiz" type="button" aria-pressed="false">Trắc nghiệm</button>
-          <button class="chip" data-view="match" type="button" aria-pressed="false">Ghép thẻ</button>
-          <button class="chip" data-view="manage" type="button" aria-pressed="false">Quản lý</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <span class="label">Hướng trắc nghiệm</span>
-        <div class="segmented">
-          <button class="chip" data-quiz-direction="zh-vi" type="button" aria-pressed="true">Trung → Việt</button>
-          <button class="chip" data-quiz-direction="vi-zh" type="button" aria-pressed="false">Việt → Trung</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <span class="label">Pinyin</span>
-        <div class="segmented">
-          <button class="chip" id="showPinyin" type="button" aria-pressed="true">Hiện</button>
-          <button class="chip" id="hidePinyin" type="button" aria-pressed="false">Ẩn</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <span class="label">Chế độ luyện nhớ</span>
-        <div class="mode-grid">
-          <button class="chip" data-mode="hanzi" type="button" aria-pressed="true">Chỉ chữ Hán</button>
-          <button class="chip" data-mode="pinyin" type="button" aria-pressed="false">Chỉ Pinyin</button>
-          <button class="chip" data-mode="meaning" type="button" aria-pressed="false">Chỉ nghĩa</button>
-          <button class="chip" data-mode="full" type="button" aria-pressed="false">Hiện đầy đủ</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <label for="excelInput">Nhập Excel</label>
-        <input id="excelInput" type="file" accept=".xlsx,.xls,.csv" />
-        <div class="hint">Cột bắt buộc: Front, Back. Cột tùy chọn: Pinyin, Example.</div>
-        <div id="fileError" class="error" role="status"></div>
-      </div>
-
-      <div class="section stats">
-        <div class="stat">
-          <strong id="cardCount">0</strong>
-          <span>Thẻ</span>
-        </div>
-        <div class="stat">
-          <strong id="lessonCount">0</strong>
-          <span>Bài</span>
-        </div>
-      </div>
-    </aside>
-
-    <main class="main">
-      <header class="topbar">
-        <div class="title-block">
-          <h1 id="lessonTitle">HSK5</h1>
-          <p id="progressText">0 / 0</p>
-        </div>
-        <div class="actions">
-          <button class="tool-button" id="shuffleButton" type="button">Trộn</button>
-          <button class="tool-button icon" id="speakButton" type="button" title="Đọc tiếng Trung" aria-label="Đọc tiếng Trung">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path></svg>
-          </button>
-          <button class="tool-button icon" id="hanziiButton" type="button" title="Mở từ này trên Hanzii" aria-label="Mở từ này trên Hanzii">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l2.1-2.1a5 5 0 0 0-7.1-7.1L11 4.9"></path><path d="M14 11a5 5 0 0 0-7.1 0l-2.1 2.1a5 5 0 0 0 7.1 7.1L13 19.1"></path></svg>
-          </button>
-        </div>
-      </header>
-
-      <section class="stage" aria-live="polite">
-        <article class="card">
-          <div class="card-meta">
-            <span id="cardLesson">Lesson</span>
-            <span id="cardIndex">0 / 0</span>
-          </div>
-
-          <div class="card-content" id="cardContent"></div>
-
-          <footer class="card-footer">
-            <span class="hint">Bấm “Lật thẻ” hoặc đổi chế độ ở bên trái.</span>
-            <div class="nav-buttons">
-              <button class="tool-button" id="prevButton" type="button">Trước</button>
-              <button class="tool-button primary" id="flipButton" type="button">Lật thẻ</button>
-              <button class="tool-button" id="nextButton" type="button">Tiếp</button>
-            </div>
-          </footer>
-        </article>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    const state = {
-      lessons: [],
-      lessonIndex: 0,
-      cardIndex: 0,
-      flipped: false,
-      showPinyin: true,
-      mode: "hanzi",
-      view: "flashcard",
-      quizDirection: "zh-vi",
-      quiz: null,
-      match: null,
-      voices: [],
-    };
-    const STORAGE_KEY = "hsk_flashcard_lessons_v2";
-
-    const el = {
-      lessonSelect: document.querySelector("#lessonSelect"),
-      lessonTitle: document.querySelector("#lessonTitle"),
-      progressText: document.querySelector("#progressText"),
-      cardLesson: document.querySelector("#cardLesson"),
-      cardIndex: document.querySelector("#cardIndex"),
-      cardContent: document.querySelector("#cardContent"),
-      cardCount: document.querySelector("#cardCount"),
-      lessonCount: document.querySelector("#lessonCount"),
-      fileError: document.querySelector("#fileError"),
-      excelInput: document.querySelector("#excelInput"),
-      showPinyin: document.querySelector("#showPinyin"),
-      hidePinyin: document.querySelector("#hidePinyin"),
-      flipButton: document.querySelector("#flipButton"),
-      prevButton: document.querySelector("#prevButton"),
-      nextButton: document.querySelector("#nextButton"),
-      shuffleButton: document.querySelector("#shuffleButton"),
-      speakButton: document.querySelector("#speakButton"),
-      hanziiButton: document.querySelector("#hanziiButton"),
-      modeButtons: [...document.querySelectorAll("[data-mode]")],
-      viewButtons: [...document.querySelectorAll("[data-view]")],
-      quizButtons: [...document.querySelectorAll("[data-quiz-direction]")],
-    };
-
-    const normalize = (value) => String(value ?? "").normalize("NFC").trim();
-
-    const splitCardBack = (value) => {
-      const parts = normalize(value)
-        .split(/\r?\n|;/)
-        .map((part) => part.trim())
-        .filter(Boolean);
-      return {
-        pinyin: parts[0] || "",
-        back: parts[1] || "",
-        example: parts.slice(2).join("\n"),
-        rawBack: normalize(value),
-      };
-    };
-
-    const cardList = () => state.lessons[state.lessonIndex]?.cards || [];
-    const currentCard = () => cardList()[state.cardIndex] || null;
-    const allCards = () => state.lessons.flatMap((lesson) => lesson.cards);
-
-    const escapeHtml = (value) => normalize(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-
-    const field = (label, value, className = "") => {
-      if (!normalize(value)) return "";
-      return `<div class="field ${className}"><strong>${label}</strong>${escapeHtml(value)}</div>`;
-    };
-
-    const shuffleArray = (items) => {
-      const copy = [...items];
-      for (let i = copy.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
+      .edit-row input,
+      .edit-row textarea,
+      .lesson-name-input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: #ffffff;
+        color: var(--ink);
+        padding: 9px 10px;
+        font: inherit;
       }
-      return copy;
-    };
 
-    const answerText = (card, direction = state.quizDirection) => (
-      direction === "zh-vi" ? card.back : card.front
-    );
+      .edit-row textarea {
+        min-height: 72px;
+        resize: vertical;
+      }
 
-    const promptText = (card, direction = state.quizDirection) => (
-      direction === "zh-vi" ? card.front : card.back
-    );
+      .lesson-name-input {
+        max-width: 320px;
+        font-weight: 700;
+      }
 
-    const cloneLessons = (lessons) => JSON.parse(JSON.stringify(lessons || []));
+      .hanzii-container {
+        width: 100%;
+        height: 400px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 12px;
+        background: #ffffff;
+      }
 
-    const mergeBundledLessons = (savedLessons, bundledLessons) => {
-      const merged = cloneLessons(savedLessons);
-      const existingNames = new Set(merged.map((lesson) => lesson.name));
-      let added = 0;
-      cloneLessons(bundledLessons).forEach((lesson) => {
-        if (!existingNames.has(lesson.name)) {
-          merged.push(lesson);
-          existingNames.add(lesson.name);
-          added += 1;
+      .hanzii-container iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+
+      @media (max-width: 880px) {
+        .app {
+          grid-template-columns: 1fr;
         }
-      });
-      return { lessons: merged, added };
-    };
 
-    const saveLessons = () => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.lessons));
-      } catch (error) {
-        el.fileError.textContent = "Không lưu được dữ liệu trên trình duyệt này.";
+        .sidebar {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .main {
+          padding: 20px;
+        }
+
+        .topbar {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .actions {
+          justify-content: flex-start;
+        }
+
+        .option-grid,
+        .match-grid,
+        .edit-row {
+          grid-template-columns: 1fr;
+        }
       }
-    };
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <h1 class="brand">中文 Flashcards</h1>
 
-    const resetPractice = () => {
-      state.cardIndex = Math.min(state.cardIndex, Math.max(0, cardList().length - 1));
-      state.flipped = false;
-      state.quiz = null;
-      state.match = null;
-    };
+        <div class="section">
+          <label for="lessonSelect">Bài học</label>
+          <select id="lessonSelect"></select>
+        </div>
 
-    const setLessons = (lessons) => {
-      state.lessons = lessons
-        .map((lesson) => ({
-          name: normalize(lesson.name) || "Excel",
-          cards: (lesson.cards || []).map((card) => ({
-            front: normalize(card.front),
-            pinyin: normalize(card.pinyin),
-            back: normalize(card.back),
-            example: normalize(card.example),
-            rawBack: normalize(card.rawBack || card.back),
-            lesson: normalize(card.lesson || lesson.name),
-          })).filter((card) => card.front && (card.back || card.pinyin || card.example || card.rawBack)),
-        }))
-        .filter((lesson) => lesson.cards.length);
-      state.lessonIndex = 0;
-      state.cardIndex = 0;
-      state.flipped = false;
-      state.quiz = null;
-      state.match = null;
-      renderLessonOptions();
-      render();
-    };
+        <div class="section">
+          <span class="label">Kiểu học</span>
+          <div class="mode-grid">
+            <button
+              class="chip"
+              data-view="flashcard"
+              type="button"
+              aria-pressed="true"
+            >
+              Flashcard
+            </button>
+            <button
+              class="chip"
+              data-view="quiz"
+              type="button"
+              aria-pressed="false"
+            >
+              Trắc nghiệm
+            </button>
+            <button
+              class="chip"
+              data-view="match"
+              type="button"
+              aria-pressed="false"
+            >
+              Ghép thẻ
+            </button>
+            <button
+              class="chip"
+              data-view="manage"
+              type="button"
+              aria-pressed="false"
+            >
+              Quản lý
+            </button>
+          </div>
+        </div>
 
-    const renderLessonOptions = () => {
-      el.lessonSelect.innerHTML = "";
-      state.lessons.forEach((lesson, index) => {
-        const option = document.createElement("option");
-        option.value = String(index);
-        option.textContent = `${lesson.name} (${lesson.cards.length})`;
-        el.lessonSelect.append(option);
-      });
-      el.lessonSelect.value = String(state.lessonIndex);
-    };
+        <div class="section">
+          <span class="label">Hướng trắc nghiệm</span>
+          <div class="segmented">
+            <button
+              class="chip"
+              data-quiz-direction="zh-vi"
+              type="button"
+              aria-pressed="true"
+            >
+              Trung → Việt
+            </button>
+            <button
+              class="chip"
+              data-quiz-direction="vi-zh"
+              type="button"
+              aria-pressed="false"
+            >
+              Việt → Trung
+            </button>
+          </div>
+        </div>
 
-    const renderModeButtons = () => {
-      el.showPinyin.setAttribute("aria-pressed", String(state.showPinyin));
-      el.hidePinyin.setAttribute("aria-pressed", String(!state.showPinyin));
-      el.modeButtons.forEach((button) => {
-        button.setAttribute("aria-pressed", String(button.dataset.mode === state.mode));
-      });
-      el.viewButtons.forEach((button) => {
-        button.setAttribute("aria-pressed", String(button.dataset.view === state.view));
-      });
-      el.quizButtons.forEach((button) => {
-        button.setAttribute("aria-pressed", String(button.dataset.quizDirection === state.quizDirection));
-      });
-    };
+        <div class="section">
+          <span class="label">Pinyin</span>
+          <div class="segmented">
+            <button
+              class="chip"
+              id="showPinyin"
+              type="button"
+              aria-pressed="true"
+            >
+              Hiện
+            </button>
+            <button
+              class="chip"
+              id="hidePinyin"
+              type="button"
+              aria-pressed="false"
+            >
+              Ẩn
+            </button>
+          </div>
+        </div>
 
-    const renderFrame = () => {
-      renderModeButtons();
-      const lessons = state.lessons;
-      const cards = cardList();
-      const totalCards = lessons.reduce((sum, lesson) => sum + lesson.cards.length, 0);
-      el.cardCount.textContent = String(totalCards);
-      el.lessonCount.textContent = String(lessons.length);
-      el.flipButton.textContent = state.view === "quiz" ? "Câu mới" : state.view === "match" ? "Ván mới" : "Lật thẻ";
+        <div class="section">
+          <span class="label">Chế độ luyện nhớ</span>
+          <div class="mode-grid">
+            <button
+              class="chip"
+              data-mode="hanzi"
+              type="button"
+              aria-pressed="true"
+            >
+              Chỉ chữ Hán
+            </button>
+            <button
+              class="chip"
+              data-mode="pinyin"
+              type="button"
+              aria-pressed="false"
+            >
+              Chỉ Pinyin
+            </button>
+            <button
+              class="chip"
+              data-mode="meaning"
+              type="button"
+              aria-pressed="false"
+            >
+              Chỉ nghĩa
+            </button>
+            <button
+              class="chip"
+              data-mode="full"
+              type="button"
+              aria-pressed="false"
+            >
+              Hiện đầy đủ
+            </button>
+          </div>
+        </div>
 
-      if (!cards.length) {
-        el.lessonTitle.textContent = "Không có thẻ";
-        el.progressText.textContent = "0 / 0";
-        el.cardLesson.textContent = "";
-        el.cardIndex.textContent = "";
-        el.cardContent.innerHTML = '<div class="field">Chưa có dữ liệu Flashcard.</div>';
-        return false;
-      }
+        <div class="section">
+          <label for="excelInput">Nhập Excel</label>
+          <input id="excelInput" type="file" accept=".xlsx,.xls,.csv" />
+          <div class="hint">
+            Cột bắt buộc: Front, Back. Cột tùy chọn: Pinyin, Example.
+          </div>
+          <div id="fileError" class="error" role="status"></div>
+        </div>
 
-      const lesson = lessons[state.lessonIndex];
-      el.lessonTitle.textContent = lesson.name;
-      el.cardLesson.textContent = lesson.name;
-      return true;
-    };
+        <div class="section stats">
+          <div class="stat">
+            <strong id="cardCount">0</strong>
+            <span>Thẻ</span>
+          </div>
+          <div class="stat">
+            <strong id="lessonCount">0</strong>
+            <span>Bài</span>
+          </div>
+        </div>
+      </aside>
 
-    const renderFlashcard = () => {
-      if (!renderFrame()) return;
-      const cards = cardList();
-      const card = currentCard();
-      el.progressText.textContent = `${state.cardIndex + 1} / ${cards.length}`;
-      el.cardIndex.textContent = `${state.cardIndex + 1} / ${cards.length}`;
+      <main class="main">
+        <header class="topbar">
+          <div class="title-block">
+            <h1 id="lessonTitle">HSK5</h1>
+            <p id="progressText">0 / 0</p>
+          </div>
+          <div class="actions">
+            <button class="tool-button" id="shuffleButton" type="button">
+              Trộn
+            </button>
+            <button
+              class="tool-button icon"
+              id="speakButton"
+              type="button"
+              title="Đọc tiếng Trung"
+              aria-label="Đọc tiếng Trung"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
+                <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+                <path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
+              </svg>
+            </button>
+            <button
+              class="tool-button icon"
+              id="hanziiButton"
+              type="button"
+              title="Mở từ này trên Hanzii"
+              aria-label="Mở từ này trên Hanzii"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M10 13a5 5 0 0 0 7.1 0l2.1-2.1a5 5 0 0 0-7.1-7.1L11 4.9"
+                ></path>
+                <path
+                  d="M14 11a5 5 0 0 0-7.1 0l-2.1 2.1a5 5 0 0 0 7.1 7.1L13 19.1"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </header>
 
-      let html = "";
-      const revealBack = state.flipped || state.mode === "full";
-      const showHanzi = state.mode === "hanzi" || state.mode === "full" || state.flipped;
-      const showPinyin = state.showPinyin && (state.mode === "pinyin" || state.mode === "full" || state.flipped);
-      const showMeaning = state.mode === "meaning" || state.mode === "full" || state.flipped;
+        <section class="stage" aria-live="polite">
+          <article class="card">
+            <div class="card-meta">
+              <span id="cardLesson">Lesson</span>
+              <span id="cardIndex">0 / 0</span>
+            </div>
 
-      if (showHanzi) html += `<div class="hanzi" lang="zh-Hans">${escapeHtml(card.front)}</div>`;
-      if (showPinyin) html += field("Pinyin", card.pinyin, "pinyin");
-      if (showMeaning || revealBack) html += field("Nghĩa", card.back, "meaning");
-      if (revealBack) html += field("Ví dụ", card.example, "example");
-      if (!html) html = '<div class="field">Không có nội dung để hiển thị trong chế độ này.</div>';
-      el.cardContent.innerHTML = html;
-    };
+            <div class="card-content" id="cardContent"></div>
 
-    const createQuiz = () => {
-      const cards = cardList().filter((card) => promptText(card) && answerText(card));
-      if (!cards.length) return null;
-      const card = cards[Math.floor(Math.random() * cards.length)];
-      const correct = answerText(card);
-      const pool = allCards()
-        .map((item) => answerText(item))
-        .filter((value) => value && value !== correct);
-      const uniqueWrong = [...new Set(pool)];
-      const choices = shuffleArray([correct, ...shuffleArray(uniqueWrong).slice(0, 3)]);
-      return { card, correct, choices, selected: "", answered: false };
-    };
+            <footer class="card-footer">
+              <span class="hint"
+                >Bấm “Lật thẻ” hoặc đổi chế độ ở bên trái.</span
+              >
+              <div class="nav-buttons">
+                <button class="tool-button" id="prevButton" type="button">
+                  Trước
+                </button>
+                <button
+                  class="tool-button primary"
+                  id="flipButton"
+                  type="button"
+                >
+                  Lật thẻ
+                </button>
+                <button class="tool-button" id="nextButton" type="button">
+                  Tiếp
+                </button>
+              </div>
+            </footer>
+          </article>
+        </section>
+      </main>
+    </div>
 
-    const renderQuiz = () => {
-      if (!renderFrame()) return;
-      if (!state.quiz) state.quiz = createQuiz();
-      const quiz = state.quiz;
-      if (!quiz) {
-        el.progressText.textContent = "Trắc nghiệm";
-        el.cardIndex.textContent = "0 / 0";
-        el.cardContent.innerHTML = '<div class="practice-panel"><div class="field">Bài này chưa có đủ dữ liệu để tạo trắc nghiệm.</div></div>';
-        return;
-      }
-      const directionLabel = state.quizDirection === "zh-vi" ? "Trung → Việt" : "Việt → Trung";
-      el.progressText.textContent = `Trắc nghiệm ${directionLabel}`;
-      el.cardIndex.textContent = directionLabel;
-      const questionClass = state.quizDirection === "vi-zh" ? "meaning-prompt" : "";
-      const options = quiz.choices.map((choice) => {
-        const selected = quiz.selected === choice;
-        const isCorrect = quiz.correct === choice;
-        const className = quiz.answered ? (isCorrect ? " correct" : selected ? " wrong" : "") : "";
-        return `<button class="option-button${className}" data-quiz-choice="${escapeHtml(choice)}" type="button" ${quiz.answered ? "disabled" : ""}>${escapeHtml(choice)}</button>`;
-      }).join("");
-      const feedback = quiz.answered
-        ? quiz.selected === quiz.correct
-          ? "Đúng rồi. Bấm Tiếp để sang câu khác."
-          : `Chưa đúng. Đáp án: ${quiz.correct}`
-        : "Chọn một đáp án.";
-      el.cardContent.innerHTML = `
+    <script>
+      const state = {
+        lessons: [],
+        lessonIndex: 0,
+        cardIndex: 0,
+        flipped: false,
+        showPinyin: true,
+        mode: "hanzi",
+        view: "flashcard",
+        quizDirection: "zh-vi",
+        quiz: null,
+        match: null,
+        voices: [],
+        markedCards: new Set(),
+        viewedCards: new Set(),
+        progress: { flashcards: 0, quizzes: 0, matches: 0 },
+      };
+      const STORAGE_KEY = "hsk_flashcard_lessons_v2";
+      const MARKED_KEY = "hsk_flashcard_marked_v1";
+      const VIEWED_KEY = "hsk_flashcard_viewed_v1";
+      const PROGRESS_KEY = "hsk_flashcard_progress_v1";
+
+      const el = {
+        lessonSelect: document.querySelector("#lessonSelect"),
+        lessonTitle: document.querySelector("#lessonTitle"),
+        progressText: document.querySelector("#progressText"),
+        cardLesson: document.querySelector("#cardLesson"),
+        cardIndex: document.querySelector("#cardIndex"),
+        cardContent: document.querySelector("#cardContent"),
+        cardCount: document.querySelector("#cardCount"),
+        lessonCount: document.querySelector("#lessonCount"),
+        fileError: document.querySelector("#fileError"),
+        excelInput: document.querySelector("#excelInput"),
+        showPinyin: document.querySelector("#showPinyin"),
+        hidePinyin: document.querySelector("#hidePinyin"),
+        flipButton: document.querySelector("#flipButton"),
+        prevButton: document.querySelector("#prevButton"),
+        nextButton: document.querySelector("#nextButton"),
+        shuffleButton: document.querySelector("#shuffleButton"),
+        speakButton: document.querySelector("#speakButton"),
+        hanziiButton: document.querySelector("#hanziiButton"),
+        modeButtons: [...document.querySelectorAll("[data-mode]")],
+        viewButtons: [...document.querySelectorAll("[data-view]")],
+        quizButtons: [...document.querySelectorAll("[data-quiz-direction]")],
+      };
+
+      const getCardId = (card) => `${card.lesson}|${card.front}`;
+
+      const loadMarked = () => {
+        try {
+          const saved = localStorage.getItem(MARKED_KEY);
+          if (saved) state.markedCards = new Set(JSON.parse(saved));
+        } catch (error) {
+          state.markedCards = new Set();
+        }
+      };
+
+      const saveMarked = () => {
+        try {
+          localStorage.setItem(
+            MARKED_KEY,
+            JSON.stringify([...state.markedCards]),
+          );
+        } catch (error) {}
+      };
+
+      const loadViewed = () => {
+        try {
+          const saved = localStorage.getItem(VIEWED_KEY);
+          if (saved) state.viewedCards = new Set(JSON.parse(saved));
+        } catch (error) {
+          state.viewedCards = new Set();
+        }
+      };
+
+      const saveViewed = () => {
+        try {
+          localStorage.setItem(
+            VIEWED_KEY,
+            JSON.stringify([...state.viewedCards]),
+          );
+        } catch (error) {}
+      };
+
+      const loadProgress = () => {
+        try {
+          const saved = localStorage.getItem(PROGRESS_KEY);
+          if (saved)
+            state.progress = { ...state.progress, ...JSON.parse(saved) };
+        } catch (error) {
+          state.progress = { flashcards: 0, quizzes: 0, matches: 0 };
+        }
+      };
+
+      const saveProgress = () => {
+        try {
+          localStorage.setItem(PROGRESS_KEY, JSON.stringify(state.progress));
+        } catch (error) {}
+      };
+
+      const markCardViewed = (card) => {
+        if (!card) return;
+        const id = getCardId(card);
+        state.viewedCards.add(id);
+        saveViewed();
+      };
+
+      const toggleMarkCard = (card) => {
+        if (!card) return;
+        const id = getCardId(card);
+        if (state.markedCards.has(id)) {
+          state.markedCards.delete(id);
+        } else {
+          state.markedCards.add(id);
+        }
+        saveMarked();
+        render();
+      };
+
+      const incrementProgress = (type) => {
+        if (["flashcards", "quizzes", "matches"].includes(type)) {
+          state.progress[type] = (state.progress[type] || 0) + 1;
+          saveProgress();
+        }
+      };
+
+      const normalize = (value) =>
+        String(value ?? "")
+          .normalize("NFC")
+          .trim();
+
+      const splitCardBack = (value) => {
+        const parts = normalize(value)
+          .split(/\r?\n|;/)
+          .map((part) => part.trim())
+          .filter(Boolean);
+        return {
+          pinyin: parts[0] || "",
+          back: parts[1] || "",
+          example: parts.slice(2).join("\n"),
+          rawBack: normalize(value),
+        };
+      };
+
+      const cardList = () => state.lessons[state.lessonIndex]?.cards || [];
+      const currentCard = () => cardList()[state.cardIndex] || null;
+      const allCards = () => state.lessons.flatMap((lesson) => lesson.cards);
+
+      const escapeHtml = (value) =>
+        normalize(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+
+      const field = (label, value, className = "") => {
+        if (!normalize(value)) return "";
+        return `<div class="field ${className}"><strong>${label}</strong>${escapeHtml(value)}</div>`;
+      };
+
+      const shuffleArray = (items) => {
+        const copy = [...items];
+        for (let i = copy.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      };
+
+      const answerText = (card, direction = state.quizDirection) =>
+        direction === "zh-vi" ? card.back : card.front;
+
+      const promptText = (card, direction = state.quizDirection) =>
+        direction === "zh-vi" ? card.front : card.back;
+
+      const cloneLessons = (lessons) =>
+        JSON.parse(JSON.stringify(lessons || []));
+
+      const mergeBundledLessons = (savedLessons, bundledLessons) => {
+        const merged = cloneLessons(savedLessons);
+        const existingNames = new Set(merged.map((lesson) => lesson.name));
+        let added = 0;
+        cloneLessons(bundledLessons).forEach((lesson) => {
+          if (!existingNames.has(lesson.name)) {
+            merged.push(lesson);
+            existingNames.add(lesson.name);
+            added += 1;
+          }
+        });
+        return { lessons: merged, added };
+      };
+
+      const saveLessons = () => {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state.lessons));
+        } catch (error) {
+          el.fileError.textContent =
+            "Không lưu được dữ liệu trên trình duyệt này.";
+        }
+      };
+
+      const resetPractice = () => {
+        state.cardIndex = Math.min(
+          state.cardIndex,
+          Math.max(0, cardList().length - 1),
+        );
+        state.flipped = false;
+        state.quiz = null;
+        state.match = null;
+      };
+
+      const setLessons = (lessons) => {
+        state.lessons = lessons
+          .map((lesson) => ({
+            name: normalize(lesson.name) || "Excel",
+            cards: (lesson.cards || [])
+              .map((card) => ({
+                front: normalize(card.front),
+                pinyin: normalize(card.pinyin),
+                back: normalize(card.back),
+                example: normalize(card.example),
+                rawBack: normalize(card.rawBack || card.back),
+                lesson: normalize(card.lesson || lesson.name),
+              }))
+              .filter(
+                (card) =>
+                  card.front &&
+                  (card.back || card.pinyin || card.example || card.rawBack),
+              ),
+          }))
+          .filter((lesson) => lesson.cards.length);
+        state.lessonIndex = 0;
+        state.cardIndex = 0;
+        state.flipped = false;
+        state.quiz = null;
+        state.match = null;
+        renderLessonOptions();
+        render();
+      };
+
+      const renderLessonOptions = () => {
+        el.lessonSelect.innerHTML = "";
+        state.lessons.forEach((lesson, index) => {
+          const option = document.createElement("option");
+          option.value = String(index);
+          option.textContent = `${lesson.name} (${lesson.cards.length})`;
+          el.lessonSelect.append(option);
+        });
+        el.lessonSelect.value = String(state.lessonIndex);
+      };
+
+      const renderModeButtons = () => {
+        el.showPinyin.setAttribute("aria-pressed", String(state.showPinyin));
+        el.hidePinyin.setAttribute("aria-pressed", String(!state.showPinyin));
+        el.modeButtons.forEach((button) => {
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.mode === state.mode),
+          );
+        });
+        el.viewButtons.forEach((button) => {
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.view === state.view),
+          );
+        });
+        el.quizButtons.forEach((button) => {
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.quizDirection === state.quizDirection),
+          );
+        });
+      };
+
+      const renderFrame = () => {
+        renderModeButtons();
+        const lessons = state.lessons;
+        const cards = cardList();
+        const totalCards = lessons.reduce(
+          (sum, lesson) => sum + lesson.cards.length,
+          0,
+        );
+        el.cardCount.textContent = String(totalCards);
+        el.lessonCount.textContent = String(lessons.length);
+        el.flipButton.textContent =
+          state.view === "quiz"
+            ? "Câu mới"
+            : state.view === "match"
+              ? "Ván mới"
+              : "Lật thẻ";
+
+        if (!cards.length) {
+          el.lessonTitle.textContent = "Không có thẻ";
+          el.progressText.textContent = "0 / 0";
+          el.cardLesson.textContent = "";
+          el.cardIndex.textContent = "";
+          el.cardContent.innerHTML =
+            '<div class="field">Chưa có dữ liệu Flashcard.</div>';
+          return false;
+        }
+
+        const lesson = lessons[state.lessonIndex];
+        el.lessonTitle.textContent = lesson.name;
+        el.cardLesson.textContent = lesson.name;
+        return true;
+      };
+
+      const renderFlashcard = () => {
+        if (!renderFrame()) return;
+        const cards = cardList();
+        const card = currentCard();
+        el.progressText.textContent = `${state.cardIndex + 1} / ${cards.length}`;
+        el.cardIndex.textContent = `${state.cardIndex + 1} / ${cards.length}`;
+
+        let html = "";
+        const revealBack = state.flipped || state.mode === "full";
+        const showHanzi =
+          state.mode === "hanzi" || state.mode === "full" || state.flipped;
+        const showPinyin =
+          state.showPinyin &&
+          (state.mode === "pinyin" || state.mode === "full" || state.flipped);
+        const showMeaning =
+          state.mode === "meaning" || state.mode === "full" || state.flipped;
+
+        const viewedCount = cards.filter((item) =>
+          state.viewedCards.has(getCardId(item)),
+        ).length;
+        const viewedPercent =
+          Math.round((viewedCount / cards.length) * 100) || 0;
+        const isMarked = state.markedCards.has(getCardId(card));
+
+        if (showHanzi)
+          html += `<div class="hanzi" lang="zh-Hans">${escapeHtml(card.front)}</div>`;
+        if (showPinyin) html += field("Pinyin", card.pinyin, "pinyin");
+        if (showMeaning || revealBack)
+          html += field("Nghĩa", card.back, "meaning");
+        if (revealBack) html += field("Ví dụ", card.example, "example");
+        if (!html)
+          html =
+            '<div class="field">Không có nội dung để hiển thị trong chế độ này.</div>';
+        if (state.flipped && card.front) {
+          const hanziiUrl = `https://hanzii.net/search/word/${encodeURIComponent(card.front)}?hl=vi`;
+          html += `<div class="hanzii-container"><iframe src="${hanziiUrl}" title="Hanzii Dictionary"></iframe></div>`;
+        }
+        html += `
+          <div class="flashcard-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${viewedPercent}%"></div>
+            </div>
+            <div class="progress-label">
+              <span>Đã xem: ${viewedCount}/${cards.length}</span>
+              <button type="button" class="tool-button" id="markButton" style="padding: 4px 8px; font-size: 12px;" ${isMarked ? 'style="background: var(--accent); color: white; border-color: var(--accent);"' : ""}>
+                ${isMarked ? "★ Đã đánh dấu" : "☆ Đánh dấu"}
+              </button>
+            </div>
+          </div>
+        `;
+        el.cardContent.innerHTML = html;
+      };
+
+      const createQuiz = () => {
+        const cards = cardList().filter(
+          (card) => promptText(card) && answerText(card),
+        );
+        if (!cards.length) return null;
+        const card = cards[Math.floor(Math.random() * cards.length)];
+        markCardViewed(card);
+        const correct = answerText(card);
+        const pool = allCards()
+          .map((item) => answerText(item))
+          .filter((value) => value && value !== correct);
+        const uniqueWrong = [...new Set(pool)];
+        const choices = shuffleArray([
+          correct,
+          ...shuffleArray(uniqueWrong).slice(0, 3),
+        ]);
+        return { card, correct, choices, selected: "", answered: false };
+      };
+
+      const renderQuiz = () => {
+        if (!renderFrame()) return;
+        if (!state.quiz) state.quiz = createQuiz();
+        const quiz = state.quiz;
+        if (!quiz) {
+          el.progressText.textContent = "Trắc nghiệm";
+          el.cardIndex.textContent = "0 / 0";
+          el.cardContent.innerHTML =
+            '<div class="practice-panel"><div class="field">Bài này chưa có đủ dữ liệu để tạo trắc nghiệm.</div></div>';
+          return;
+        }
+        const directionLabel =
+          state.quizDirection === "zh-vi" ? "Trung → Việt" : "Việt → Trung";
+        el.progressText.textContent = `Trắc nghiệm ${directionLabel}`;
+        el.cardIndex.textContent = directionLabel;
+        const questionClass =
+          state.quizDirection === "vi-zh" ? "meaning-prompt" : "";
+        const options = quiz.choices
+          .map((choice) => {
+            const selected = quiz.selected === choice;
+            const isCorrect = quiz.correct === choice;
+            const className = quiz.answered
+              ? isCorrect
+                ? " correct"
+                : selected
+                  ? " wrong"
+                  : ""
+              : "";
+            return `<button class="option-button${className}" data-quiz-choice="${escapeHtml(choice)}" type="button" ${quiz.answered ? "disabled" : ""}>${escapeHtml(choice)}</button>`;
+          })
+          .join("");
+        const feedback = quiz.answered
+          ? quiz.selected === quiz.correct
+            ? "Đúng rồi. Bấm Tiếp để sang câu khác."
+            : `Chưa đúng. Đáp án: ${quiz.correct}`
+          : "Chọn một đáp án.";
+        const hanziiSection =
+          quiz.answered && quiz.card.front
+            ? `<div class="hanzii-container"><iframe src="https://hanzii.net/search/word/${encodeURIComponent(quiz.card.front)}?hl=vi" title="Hanzii Dictionary"></iframe></div>`
+            : "";
+        el.cardContent.innerHTML = `
         <div class="practice-panel">
           <p class="quiz-question ${questionClass}" lang="${state.quizDirection === "zh-vi" ? "zh-Hans" : "vi"}">${escapeHtml(promptText(quiz.card))}</p>
           ${state.showPinyin && quiz.card.pinyin ? `<div class="field pinyin"><strong>Pinyin</strong>${escapeHtml(quiz.card.pinyin)}</div>` : ""}
           <div class="option-grid">${options}</div>
           <div class="feedback">${escapeHtml(feedback)}</div>
+          ${hanziiSection}
         </div>
       `;
-    };
-
-    const createMatch = () => {
-      const cards = shuffleArray(cardList().filter((card) => card.front && card.back)).slice(0, 6);
-      return {
-        pairs: cards.map((card, index) => ({ id: String(index), card })),
-        leftOrder: shuffleArray(cards.map((_, index) => String(index))),
-        rightOrder: shuffleArray(cards.map((_, index) => String(index))),
-        selectedLeft: "",
-        matched: [],
-        message: "Chọn một thẻ chữ Hán, rồi chọn nghĩa tương ứng.",
       };
-    };
 
-    const renderMatch = () => {
-      if (!renderFrame()) return;
-      if (!state.match) state.match = createMatch();
-      const match = state.match;
-      if (!match.pairs.length) {
-        el.progressText.textContent = "Ghép thẻ";
-        el.cardIndex.textContent = "0 / 0";
-        el.cardContent.innerHTML = '<div class="practice-panel"><div class="field">Bài này chưa có đủ dữ liệu để tạo ghép thẻ.</div></div>';
-        return;
-      }
-      el.progressText.textContent = `Ghép thẻ ${match.matched.length} / ${match.pairs.length}`;
-      el.cardIndex.textContent = `${match.matched.length} / ${match.pairs.length}`;
-      const pairById = Object.fromEntries(match.pairs.map((pair) => [pair.id, pair]));
-      const left = match.leftOrder.map((id) => {
-        const pair = pairById[id];
-        const matched = match.matched.includes(id);
-        const selected = match.selectedLeft === id;
-        return `<button class="match-button${matched ? " matched" : ""}${selected ? " selected" : ""}" data-match-left="${id}" type="button" ${matched ? "disabled" : ""} lang="zh-Hans">${escapeHtml(pair.card.front)}</button>`;
-      }).join("");
-      const right = match.rightOrder.map((id) => {
-        const pair = pairById[id];
-        const matched = match.matched.includes(id);
-        return `<button class="match-button${matched ? " matched" : ""}" data-match-right="${id}" type="button" ${matched ? "disabled" : ""}>${escapeHtml(pair.card.back)}</button>`;
-      }).join("");
-      el.cardContent.innerHTML = `
+      const createMatch = () => {
+        const cards = shuffleArray(
+          cardList().filter((card) => card.front && card.back),
+        ).slice(0, 6);
+        cards.forEach((card) => markCardViewed(card));
+        return {
+          pairs: cards.map((card, index) => ({ id: String(index), card })),
+          leftOrder: shuffleArray(cards.map((_, index) => String(index))),
+          rightOrder: shuffleArray(cards.map((_, index) => String(index))),
+          selectedLeft: "",
+          matched: [],
+          message: "Chọn một thẻ chữ Hán, rồi chọn nghĩa tương ứng.",
+        };
+      };
+
+      const renderMatch = () => {
+        if (!renderFrame()) return;
+        if (!state.match) state.match = createMatch();
+        const match = state.match;
+        if (!match.pairs.length) {
+          el.progressText.textContent = "Ghép thẻ";
+          el.cardIndex.textContent = "0 / 0";
+          el.cardContent.innerHTML =
+            '<div class="practice-panel"><div class="field">Bài này chưa có đủ dữ liệu để tạo ghép thẻ.</div></div>';
+          return;
+        }
+        el.progressText.textContent = `Ghép thẻ ${match.matched.length} / ${match.pairs.length}`;
+        el.cardIndex.textContent = `${match.matched.length} / ${match.pairs.length}`;
+        const pairById = Object.fromEntries(
+          match.pairs.map((pair) => [pair.id, pair]),
+        );
+        const left = match.leftOrder
+          .map((id) => {
+            const pair = pairById[id];
+            const matched = match.matched.includes(id);
+            const selected = match.selectedLeft === id;
+            return `<button class="match-button${matched ? " matched" : ""}${selected ? " selected" : ""}" data-match-left="${id}" type="button" ${matched ? "disabled" : ""} lang="zh-Hans">${escapeHtml(pair.card.front)}</button>`;
+          })
+          .join("");
+        const right = match.rightOrder
+          .map((id) => {
+            const pair = pairById[id];
+            const matched = match.matched.includes(id);
+            return `<button class="match-button${matched ? " matched" : ""}" data-match-right="${id}" type="button" ${matched ? "disabled" : ""}>${escapeHtml(pair.card.back)}</button>`;
+          })
+          .join("");
+        el.cardContent.innerHTML = `
         <div class="practice-panel">
           <div class="match-grid">
             <div class="match-column"><h2>中文</h2>${left}</div>
@@ -911,14 +1260,16 @@
           <div class="feedback">${escapeHtml(match.message)}</div>
         </div>
       `;
-    };
+      };
 
-    const renderManage = () => {
-      if (!renderFrame()) return;
-      const lesson = state.lessons[state.lessonIndex];
-      el.progressText.textContent = `Quản lý ${lesson.cards.length} thẻ`;
-      el.cardIndex.textContent = `${lesson.cards.length} thẻ`;
-      const rows = lesson.cards.map((card, index) => `
+      const renderManage = () => {
+        if (!renderFrame()) return;
+        const lesson = state.lessons[state.lessonIndex];
+        el.progressText.textContent = `Quản lý ${lesson.cards.length} thẻ`;
+        el.cardIndex.textContent = `${lesson.cards.length} thẻ`;
+        const rows = lesson.cards
+          .map(
+            (card, index) => `
         <div class="edit-row" data-edit-index="${index}">
           <input data-edit-field="front" value="${escapeHtml(card.front)}" placeholder="中文 / Front" lang="zh-Hans" />
           <input data-edit-field="pinyin" value="${escapeHtml(card.pinyin)}" placeholder="Pinyin" />
@@ -926,8 +1277,10 @@
           <textarea data-edit-field="example" placeholder="Ví dụ / Example">${escapeHtml(card.example)}</textarea>
           <button class="tool-button" data-delete-card="${index}" type="button">Xóa</button>
         </div>
-      `).join("");
-      el.cardContent.innerHTML = `
+      `,
+          )
+          .join("");
+        el.cardContent.innerHTML = `
         <div class="editor-panel">
           <div class="editor-toolbar">
             <input class="lesson-name-input" id="lessonNameInput" value="${escapeHtml(lesson.name)}" aria-label="Tên bài học" />
@@ -941,356 +1294,461 @@
           <div class="editor-list">${rows}</div>
         </div>
       `;
-    };
+      };
 
-    const render = () => {
-      if (state.view === "quiz") {
-        renderQuiz();
-        return;
-      }
-      if (state.view === "match") {
-        renderMatch();
-        return;
-      }
-      if (state.view === "manage") {
-        renderManage();
-        return;
-      }
-      renderFlashcard();
-    };
+      const render = () => {
+        if (state.view === "quiz") {
+          renderQuiz();
+          return;
+        }
+        if (state.view === "match") {
+          renderMatch();
+          return;
+        }
+        if (state.view === "manage") {
+          renderManage();
+          return;
+        }
+        renderFlashcard();
+      };
 
-    const nextCard = (step) => {
-      const cards = cardList();
-      if (!cards.length) return;
-      state.cardIndex = (state.cardIndex + step + cards.length) % cards.length;
-      state.flipped = false;
-      render();
-    };
-
-    const nextPractice = (step = 1) => {
-      if (state.view === "quiz") {
-        state.quiz = createQuiz();
+      const nextCard = (step) => {
+        const cards = cardList();
+        if (!cards.length) return;
+        state.cardIndex =
+          (state.cardIndex + step + cards.length) % cards.length;
+        state.flipped = false;
         render();
-        return;
-      }
-      if (state.view === "match") {
-        state.match = createMatch();
+      };
+
+      const nextPractice = (step = 1) => {
+        if (state.view === "quiz") {
+          state.quiz = createQuiz();
+          render();
+          return;
+        }
+        if (state.view === "match") {
+          state.match = createMatch();
+          render();
+          return;
+        }
+        nextCard(step);
+      };
+
+      const shuffleCards = () => {
+        if (state.view === "quiz") {
+          state.quiz = createQuiz();
+          render();
+          return;
+        }
+        if (state.view === "match") {
+          state.match = createMatch();
+          render();
+          return;
+        }
+        const cards = cardList();
+        for (let i = cards.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [cards[i], cards[j]] = [cards[j], cards[i]];
+        }
+        state.cardIndex = 0;
+        state.flipped = false;
         render();
-        return;
-      }
-      nextCard(step);
-    };
+      };
 
-    const shuffleCards = () => {
-      if (state.view === "quiz") {
-        state.quiz = createQuiz();
-        render();
-        return;
-      }
-      if (state.view === "match") {
-        state.match = createMatch();
-        render();
-        return;
-      }
-      const cards = cardList();
-      for (let i = cards.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [cards[i], cards[j]] = [cards[j], cards[i]];
-      }
-      state.cardIndex = 0;
-      state.flipped = false;
-      render();
-    };
+      const hanziiUrl = (card) =>
+        `https://hanzii.net/search/word/${encodeURIComponent(card?.front || "")}?hl=vi`;
 
-    const hanziiUrl = (card) => `https://hanzii.net/search/word/${encodeURIComponent(card?.front || "")}?hl=vi`;
+      const openHanzii = () => {
+        const card = state.view === "quiz" ? state.quiz?.card : currentCard();
+        if (!card?.front) return;
+        window.open(hanziiUrl(card), "_blank", "noopener,noreferrer");
+      };
 
-    const openHanzii = () => {
-      const card = state.view === "quiz" ? state.quiz?.card : currentCard();
-      if (!card?.front) return;
-      window.open(hanziiUrl(card), "_blank", "noopener,noreferrer");
-    };
-
-    const exportLessons = () => {
-      const payload = JSON.stringify({ lessons: state.lessons }, null, 2);
-      const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "hsk_flashcards_edited.json";
-      document.body.append(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    };
-
-    const resetData = () => {
-      if (!window.confirm("Đặt lại dữ liệu về bản HSK5 gốc? Các chỉnh sửa đã lưu trên trình duyệt sẽ bị xóa.")) return;
-      localStorage.removeItem(STORAGE_KEY);
-      setLessons(window.HSK5_FLASHCARD_DATA?.lessons || []);
-    };
-
-    const updateVoices = () => {
-      state.voices = window.speechSynthesis ? speechSynthesis.getVoices() : [];
-    };
-
-    const speakChinese = () => {
-      const matchPair = state.match?.pairs.find((pair) => pair.id === state.match?.selectedLeft)
-        || state.match?.pairs.find((pair) => !state.match.matched.includes(pair.id));
-      const card = state.view === "quiz" ? state.quiz?.card
-        : state.view === "match" ? matchPair?.card
-        : currentCard();
-      if (!card || !window.speechSynthesis) return;
-      speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(card.front);
-      utterance.lang = "zh-CN";
-      const voice = state.voices.find((item) => /zh|Chinese|Mandarin|普通话|中文/i.test(`${item.lang} ${item.name}`));
-      if (voice) utterance.voice = voice;
-      utterance.rate = 0.85;
-      speechSynthesis.speak(utterance);
-    };
-
-    const parseExcelRows = (rows, sheetName) => {
-      if (!rows.length) return [];
-      const headers = rows[0].map((header) => normalize(header).toLowerCase());
-      const findColumn = (...names) => names.map((name) => headers.indexOf(name)).find((index) => index >= 0);
-      const frontIndex = findColumn("front", "hanzi", "中文", "chữ hán", "chu han", "từ vựng", "tu vung");
-      const backIndex = findColumn("back", "nghĩa", "nghia", "meaning", "tiếng việt", "tieng viet", "chỉ nghĩa", "chi nghia");
-      const pinyinIndex = findColumn("pinyin", "拼音", "chữ pinyin", "chu pinyin");
-      const exampleIndex = findColumn("example", "ví dụ", "vi du", "例句");
-      if (frontIndex === undefined || backIndex === undefined) {
-        throw new Error("Excel cần có cột Front và Back. Có thể dùng thêm Pinyin, Example.");
-      }
-      return rows.slice(1).map((row) => {
-        const fallback = splitCardBack(row[backIndex]);
-        return {
-          front: row[frontIndex],
-          pinyin: pinyinIndex === undefined ? fallback.pinyin : row[pinyinIndex],
-          back: pinyinIndex === undefined ? fallback.back || row[backIndex] : row[backIndex],
-          example: exampleIndex === undefined ? fallback.example : row[exampleIndex],
-          rawBack: row[backIndex],
-          lesson: sheetName,
-        };
-      });
-    };
-
-    const handleExcel = async (file) => {
-      el.fileError.textContent = "";
-      if (!window.XLSX) {
-        el.fileError.textContent = "Chưa tải được thư viện đọc Excel. Hãy mở file khi có Internet hoặc dùng dữ liệu HSK5 có sẵn.";
-        return;
-      }
-      try {
-        const buffer = await file.arrayBuffer();
-        const workbook = XLSX.read(buffer, { type: "array", cellText: false, cellDates: true });
-        const lessons = workbook.SheetNames.map((name) => {
-          const rows = XLSX.utils.sheet_to_json(workbook.Sheets[name], {
-            header: 1,
-            raw: false,
-            defval: "",
-            blankrows: false,
-          });
-          return { name, cards: parseExcelRows(rows, name) };
+      const exportLessons = () => {
+        const payload = JSON.stringify({ lessons: state.lessons }, null, 2);
+        const blob = new Blob([payload], {
+          type: "application/json;charset=utf-8",
         });
-        setLessons(lessons);
-        saveLessons();
-      } catch (error) {
-        el.fileError.textContent = error.message || String(error);
-      }
-    };
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "hsk_flashcards_edited.json";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      };
 
-    el.lessonSelect.addEventListener("change", () => {
-      state.lessonIndex = Number(el.lessonSelect.value);
-      state.cardIndex = 0;
-      state.flipped = false;
-      state.quiz = null;
-      state.match = null;
-      render();
-    });
-    el.showPinyin.addEventListener("click", () => { state.showPinyin = true; render(); });
-    el.hidePinyin.addEventListener("click", () => { state.showPinyin = false; render(); });
-    el.viewButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        state.view = button.dataset.view;
+      const resetData = () => {
+        if (
+          !window.confirm(
+            "Đặt lại dữ liệu về bản HSK5 gốc? Các chỉnh sửa đã lưu trên trình duyệt sẽ bị xóa.",
+          )
+        )
+          return;
+        localStorage.removeItem(STORAGE_KEY);
+        setLessons(window.HSK5_FLASHCARD_DATA?.lessons || []);
+      };
+
+      const updateVoices = () => {
+        state.voices = window.speechSynthesis
+          ? speechSynthesis.getVoices()
+          : [];
+      };
+
+      const speakChinese = () => {
+        const matchPair =
+          state.match?.pairs.find(
+            (pair) => pair.id === state.match?.selectedLeft,
+          ) ||
+          state.match?.pairs.find(
+            (pair) => !state.match.matched.includes(pair.id),
+          );
+        const card =
+          state.view === "quiz"
+            ? state.quiz?.card
+            : state.view === "match"
+              ? matchPair?.card
+              : currentCard();
+        if (!card || !window.speechSynthesis) return;
+        speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(card.front);
+        utterance.lang = "zh-CN";
+        const voice = state.voices.find((item) =>
+          /zh|Chinese|Mandarin|普通话|中文/i.test(`${item.lang} ${item.name}`),
+        );
+        if (voice) utterance.voice = voice;
+        utterance.rate = 0.85;
+        speechSynthesis.speak(utterance);
+      };
+
+      const parseExcelRows = (rows, sheetName) => {
+        if (!rows.length) return [];
+        const headers = rows[0].map((header) =>
+          normalize(header).toLowerCase(),
+        );
+        const findColumn = (...names) =>
+          names
+            .map((name) => headers.indexOf(name))
+            .find((index) => index >= 0);
+        const frontIndex = findColumn(
+          "front",
+          "hanzi",
+          "中文",
+          "chữ hán",
+          "chu han",
+          "từ vựng",
+          "tu vung",
+        );
+        const backIndex = findColumn(
+          "back",
+          "nghĩa",
+          "nghia",
+          "meaning",
+          "tiếng việt",
+          "tieng viet",
+          "chỉ nghĩa",
+          "chi nghia",
+        );
+        const pinyinIndex = findColumn(
+          "pinyin",
+          "拼音",
+          "chữ pinyin",
+          "chu pinyin",
+        );
+        const exampleIndex = findColumn("example", "ví dụ", "vi du", "例句");
+        if (frontIndex === undefined || backIndex === undefined) {
+          throw new Error(
+            "Excel cần có cột Front và Back. Có thể dùng thêm Pinyin, Example.",
+          );
+        }
+        return rows.slice(1).map((row) => {
+          const fallback = splitCardBack(row[backIndex]);
+          return {
+            front: row[frontIndex],
+            pinyin:
+              pinyinIndex === undefined ? fallback.pinyin : row[pinyinIndex],
+            back:
+              pinyinIndex === undefined
+                ? fallback.back || row[backIndex]
+                : row[backIndex],
+            example:
+              exampleIndex === undefined ? fallback.example : row[exampleIndex],
+            rawBack: row[backIndex],
+            lesson: sheetName,
+          };
+        });
+      };
+
+      const handleExcel = async (file) => {
+        el.fileError.textContent = "";
+        if (!window.XLSX) {
+          el.fileError.textContent =
+            "Chưa tải được thư viện đọc Excel. Hãy mở file khi có Internet hoặc dùng dữ liệu HSK5 có sẵn.";
+          return;
+        }
+        try {
+          const buffer = await file.arrayBuffer();
+          const workbook = XLSX.read(buffer, {
+            type: "array",
+            cellText: false,
+            cellDates: true,
+          });
+          const lessons = workbook.SheetNames.map((name) => {
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[name], {
+              header: 1,
+              raw: false,
+              defval: "",
+              blankrows: false,
+            });
+            return { name, cards: parseExcelRows(rows, name) };
+          });
+          setLessons(lessons);
+          saveLessons();
+        } catch (error) {
+          el.fileError.textContent = error.message || String(error);
+        }
+      };
+
+      el.lessonSelect.addEventListener("change", () => {
+        state.lessonIndex = Number(el.lessonSelect.value);
+        state.cardIndex = 0;
         state.flipped = false;
         state.quiz = null;
         state.match = null;
         render();
       });
-    });
-    el.quizButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        state.quizDirection = button.dataset.quizDirection;
-        state.view = "quiz";
-        state.quiz = null;
+      el.showPinyin.addEventListener("click", () => {
+        state.showPinyin = true;
         render();
       });
-    });
-    el.modeButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        state.mode = button.dataset.mode;
-        state.flipped = false;
+      el.hidePinyin.addEventListener("click", () => {
+        state.showPinyin = false;
         render();
       });
-    });
-    el.flipButton.addEventListener("click", () => {
-      if (state.view === "flashcard") state.flipped = !state.flipped;
-      if (state.view === "quiz") state.quiz = createQuiz();
-      if (state.view === "match") state.match = createMatch();
-      render();
-    });
-    el.prevButton.addEventListener("click", () => nextPractice(-1));
-    el.nextButton.addEventListener("click", () => nextPractice(1));
-    el.shuffleButton.addEventListener("click", shuffleCards);
-    el.speakButton.addEventListener("click", speakChinese);
-    el.hanziiButton.addEventListener("click", openHanzii);
-    el.cardContent.addEventListener("click", (event) => {
-      const addButton = event.target.closest("#addCardButton");
-      if (addButton) {
-        const lesson = state.lessons[state.lessonIndex];
-        lesson.cards.unshift({ front: "新词", pinyin: "", back: "Nghĩa mới", example: "", rawBack: "", lesson: lesson.name });
-        state.cardIndex = 0;
-        resetPractice();
-        saveLessons();
-        render();
-        return;
-      }
-      const exportButton = event.target.closest("#exportDataButton");
-      if (exportButton) {
-        exportLessons();
-        return;
-      }
-      const resetButton = event.target.closest("#resetDataButton");
-      if (resetButton) {
-        resetData();
-        return;
-      }
-      const deleteButton = event.target.closest("[data-delete-card]");
-      if (deleteButton) {
-        const index = Number(deleteButton.dataset.deleteCard);
-        const lesson = state.lessons[state.lessonIndex];
-        lesson.cards.splice(index, 1);
-        resetPractice();
-        saveLessons();
-        render();
-        return;
-      }
-      const quizButton = event.target.closest("[data-quiz-choice]");
-      if (quizButton && state.quiz && !state.quiz.answered) {
-        state.quiz.selected = quizButton.dataset.quizChoice;
-        state.quiz.answered = true;
-        render();
-        return;
-      }
-      const leftButton = event.target.closest("[data-match-left]");
-      if (leftButton && state.match) {
-        state.match.selectedLeft = leftButton.dataset.matchLeft;
-        state.match.message = "Bây giờ chọn nghĩa tiếng Việt tương ứng.";
-        render();
-        return;
-      }
-      const rightButton = event.target.closest("[data-match-right]");
-      if (rightButton && state.match) {
-        const rightId = rightButton.dataset.matchRight;
-        if (!state.match.selectedLeft) {
-          state.match.message = "Hãy chọn thẻ chữ Hán trước.";
-        } else if (state.match.selectedLeft === rightId) {
-          state.match.matched.push(rightId);
-          state.match.selectedLeft = "";
-          state.match.message = state.match.matched.length === state.match.pairs.length
-            ? "Hoàn thành. Bấm Trộn để chơi ván mới."
-            : "Đúng rồi. Ghép tiếp cặp khác.";
-        } else {
-          state.match.selectedLeft = "";
-          state.match.message = "Chưa đúng, thử lại nhé.";
-        }
-        render();
-      }
-    });
-    el.cardContent.addEventListener("input", (event) => {
-      const lesson = state.lessons[state.lessonIndex];
-      if (!lesson) return;
-      if (event.target.id === "lessonNameInput") {
-        lesson.name = normalize(event.target.value) || lesson.name;
-        lesson.cards.forEach((card) => { card.lesson = lesson.name; });
-        renderLessonOptions();
-        el.lessonSelect.value = String(state.lessonIndex);
-        saveLessons();
-        renderModeButtons();
-        return;
-      }
-      const fieldInput = event.target.closest("[data-edit-field]");
-      if (!fieldInput) return;
-      const row = fieldInput.closest("[data-edit-index]");
-      const card = lesson.cards[Number(row.dataset.editIndex)];
-      if (!card) return;
-      card[fieldInput.dataset.editField] = fieldInput.value.normalize("NFC");
-      card.rawBack = [card.pinyin, card.back, card.example].filter(Boolean).join("\n");
-      card.lesson = lesson.name;
-      resetPractice();
-      saveLessons();
-    });
-    el.excelInput.addEventListener("change", (event) => {
-      const file = event.target.files?.[0];
-      if (file) handleExcel(file);
-    });
-    window.addEventListener("keydown", (event) => {
-      if (event.key === "ArrowRight") nextPractice(1);
-      if (event.key === "ArrowLeft") nextPractice(-1);
-      if (event.key === " ") {
-        event.preventDefault();
-        if (state.view === "flashcard") state.flipped = !state.flipped;
-        if (state.view === "quiz") state.quiz = createQuiz();
-        if (state.view === "match") state.match = createMatch();
-        render();
-      }
-    });
-
-    if (window.speechSynthesis) {
-      updateVoices();
-      speechSynthesis.addEventListener("voiceschanged", updateVoices);
-    }
-
-    const loadBundledData = () => {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          const savedLessons = parsed.lessons || parsed;
-          const bundledLessons = window.HSK5_FLASHCARD_DATA?.lessons || [];
-          if (bundledLessons.length) {
-            const merged = mergeBundledLessons(savedLessons, bundledLessons);
-            setLessons(merged.lessons);
-            if (merged.added) saveLessons();
-          } else {
-            setLessons(savedLessons);
-          }
-          return;
-        } catch (error) {
-          localStorage.removeItem(STORAGE_KEY);
-        }
-      }
-      if (window.HSK5_FLASHCARD_DATA?.lessons) {
-        setLessons(cloneLessons(window.HSK5_FLASHCARD_DATA.lessons));
-        return;
-      }
-      fetch("hsk5_flashcards_data.json", { cache: "no-store" })
-        .then((response) => response.json())
-        .then((data) => setLessons(data.lessons || []))
-        .catch(() => {
-          setLessons([{
-            name: "M\u1eabu",
-            cards: [{
-              front: "\u4f60\u597d",
-              pinyin: "n\u01d0 h\u01ceo",
-              back: "Xin ch\u00e0o",
-              example: "\u4f60\u597d\uff0c\u5f88\u9ad8\u5174\u8ba4\u8bc6\u4f60\u3002",
-              lesson: "M\u1eabu",
-            }],
-          }]);
+      el.viewButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          state.view = button.dataset.view;
+          state.flipped = false;
+          state.quiz = null;
+          state.match = null;
+          render();
         });
-    };
+      });
+      el.quizButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          state.quizDirection = button.dataset.quizDirection;
+          state.view = "quiz";
+          state.quiz = null;
+          render();
+        });
+      });
+      el.modeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          state.mode = button.dataset.mode;
+          state.flipped = false;
+          render();
+        });
+      });
+      el.flipButton.addEventListener("click", () => {
+        if (state.view === "flashcard") {
+          if (!state.flipped) {
+            state.flipped = true;
+            markCardViewed(currentCard());
+            incrementProgress("flashcards");
+          } else {
+            state.flipped = false;
+          }
+        }
+        if (state.view === "quiz") {
+          state.quiz = createQuiz();
+          incrementProgress("quizzes");
+        }
+        if (state.view === "match") {
+          state.match = createMatch();
+          incrementProgress("matches");
+        }
+        render();
+      });
+      el.prevButton.addEventListener("click", () => nextPractice(-1));
+      el.nextButton.addEventListener("click", () => nextPractice(1));
+      el.shuffleButton.addEventListener("click", shuffleCards);
+      el.speakButton.addEventListener("click", speakChinese);
+      el.hanziiButton.addEventListener("click", openHanzii);
+      el.cardContent.addEventListener("click", (event) => {
+        const markButton = event.target.closest("#markButton");
+        if (markButton) {
+          toggleMarkCard(currentCard());
+          return;
+        }
+        const addButton = event.target.closest("#addCardButton");
+        if (addButton) {
+          const lesson = state.lessons[state.lessonIndex];
+          lesson.cards.unshift({
+            front: "新词",
+            pinyin: "",
+            back: "Nghĩa mới",
+            example: "",
+            rawBack: "",
+            lesson: lesson.name,
+          });
+          state.cardIndex = 0;
+          resetPractice();
+          saveLessons();
+          render();
+          return;
+        }
+        const exportButton = event.target.closest("#exportDataButton");
+        if (exportButton) {
+          exportLessons();
+          return;
+        }
+        const resetButton = event.target.closest("#resetDataButton");
+        if (resetButton) {
+          resetData();
+          return;
+        }
+        const deleteButton = event.target.closest("[data-delete-card]");
+        if (deleteButton) {
+          const index = Number(deleteButton.dataset.deleteCard);
+          const lesson = state.lessons[state.lessonIndex];
+          lesson.cards.splice(index, 1);
+          resetPractice();
+          saveLessons();
+          render();
+          return;
+        }
+        const quizButton = event.target.closest("[data-quiz-choice]");
+        if (quizButton && state.quiz && !state.quiz.answered) {
+          state.quiz.selected = quizButton.dataset.quizChoice;
+          state.quiz.answered = true;
+          render();
+          return;
+        }
+        const leftButton = event.target.closest("[data-match-left]");
+        if (leftButton && state.match) {
+          state.match.selectedLeft = leftButton.dataset.matchLeft;
+          state.match.message = "Bây giờ chọn nghĩa tiếng Việt tương ứng.";
+          render();
+          return;
+        }
+        const rightButton = event.target.closest("[data-match-right]");
+        if (rightButton && state.match) {
+          const rightId = rightButton.dataset.matchRight;
+          if (!state.match.selectedLeft) {
+            state.match.message = "Hãy chọn thẻ chữ Hán trước.";
+          } else if (state.match.selectedLeft === rightId) {
+            state.match.matched.push(rightId);
+            state.match.selectedLeft = "";
+            state.match.message =
+              state.match.matched.length === state.match.pairs.length
+                ? "Hoàn thành. Bấm Trộn để chơi ván mới."
+                : "Đúng rồi. Ghép tiếp cặp khác.";
+          } else {
+            state.match.selectedLeft = "";
+            state.match.message = "Chưa đúng, thử lại nhé.";
+          }
+          render();
+        }
+      });
+      el.cardContent.addEventListener("input", (event) => {
+        const lesson = state.lessons[state.lessonIndex];
+        if (!lesson) return;
+        if (event.target.id === "lessonNameInput") {
+          lesson.name = normalize(event.target.value) || lesson.name;
+          lesson.cards.forEach((card) => {
+            card.lesson = lesson.name;
+          });
+          renderLessonOptions();
+          el.lessonSelect.value = String(state.lessonIndex);
+          saveLessons();
+          renderModeButtons();
+          return;
+        }
+        const fieldInput = event.target.closest("[data-edit-field]");
+        if (!fieldInput) return;
+        const row = fieldInput.closest("[data-edit-index]");
+        const card = lesson.cards[Number(row.dataset.editIndex)];
+        if (!card) return;
+        card[fieldInput.dataset.editField] = fieldInput.value.normalize("NFC");
+        card.rawBack = [card.pinyin, card.back, card.example]
+          .filter(Boolean)
+          .join("\n");
+        card.lesson = lesson.name;
+        resetPractice();
+        saveLessons();
+      });
+      el.excelInput.addEventListener("change", (event) => {
+        const file = event.target.files?.[0];
+        if (file) handleExcel(file);
+      });
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowRight") nextPractice(1);
+        if (event.key === "ArrowLeft") nextPractice(-1);
+        if (event.key === " ") {
+          event.preventDefault();
+          if (state.view === "flashcard") state.flipped = !state.flipped;
+          if (state.view === "quiz") state.quiz = createQuiz();
+          if (state.view === "match") state.match = createMatch();
+          render();
+        }
+      });
 
-    loadBundledData();
-  </script>
-</body>
+      if (window.speechSynthesis) {
+        updateVoices();
+        speechSynthesis.addEventListener("voiceschanged", updateVoices);
+      }
+
+      const loadBundledData = () => {
+        loadMarked();
+        loadViewed();
+        loadProgress();
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            const savedLessons = parsed.lessons || parsed;
+            const bundledLessons = window.HSK5_FLASHCARD_DATA?.lessons || [];
+            if (bundledLessons.length) {
+              const merged = mergeBundledLessons(savedLessons, bundledLessons);
+              setLessons(merged.lessons);
+              if (merged.added) saveLessons();
+            } else {
+              setLessons(savedLessons);
+            }
+            return;
+          } catch (error) {
+            localStorage.removeItem(STORAGE_KEY);
+          }
+        }
+        if (window.HSK5_FLASHCARD_DATA?.lessons) {
+          setLessons(cloneLessons(window.HSK5_FLASHCARD_DATA.lessons));
+          return;
+        }
+        fetch("hsk5_flashcards_data.json", { cache: "no-store" })
+          .then((response) => response.json())
+          .then((data) => setLessons(data.lessons || []))
+          .catch(() => {
+            setLessons([
+              {
+                name: "M\u1eabu",
+                cards: [
+                  {
+                    front: "\u4f60\u597d",
+                    pinyin: "n\u01d0 h\u01ceo",
+                    back: "Xin ch\u00e0o",
+                    example:
+                      "\u4f60\u597d\uff0c\u5f88\u9ad8\u5154\u8ba4\u8bc6\u4f60\u3002",
+                    lesson: "M\u1eabu",
+                  },
+                ],
+              },
+            ]);
+          });
+      };
+
+      loadBundledData();
+    </script>
+  </body>
 </html>

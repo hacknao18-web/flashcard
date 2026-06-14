@@ -743,6 +743,56 @@
         </div>
 
         <div class="section">
+          <span class="label">Bộ lọc thông minh</span>
+          <div class="mode-grid">
+            <button
+              class="chip"
+              data-filter-status="all"
+              type="button"
+              aria-pressed="true"
+            >
+              Tất cả
+            </button>
+            <button
+              class="chip"
+              data-filter-status="unviewed"
+              type="button"
+              aria-pressed="false"
+            >
+              Chưa học
+            </button>
+            <button
+              class="chip"
+              data-filter-status="marked"
+              type="button"
+              aria-pressed="false"
+            >
+              Đánh dấu
+            </button>
+            <button
+              class="chip"
+              data-filter-status="difficult"
+              type="button"
+              aria-pressed="false"
+            >
+              Từ khó
+            </button>
+          </div>
+          <label for="filterPracticeCount" style="margin-top: 10px"
+            >Luyện tập</label
+          >
+          <select id="filterPracticeCount">
+            <option value="all">Tất cả lần luyện</option>
+            <option value="0-2">0–2 lần</option>
+            <option value="3-5">3–5 lần</option>
+            <option value="5+">5+ lần</option>
+          </select>
+          <div id="filterInfo" class="hint" style="margin-top: 8px">
+            Không lọc
+          </div>
+        </div>
+
+        <div class="section">
           <span class="label">Ôn tập</span>
           <div class="mode-grid">
             <button
@@ -894,6 +944,8 @@
         practiceCounts: {},
         reviewDifficultOnly: false,
         theme: "light",
+        filterStatus: "all",
+        filterPracticeCount: "all",
       };
       const STORAGE_KEY = "hsk_flashcard_lessons_v2";
       const MARKED_KEY = "hsk_flashcard_marked_v1";
@@ -901,6 +953,7 @@
       const VIEWED_KEY = "hsk_flashcard_viewed_v1";
       const PROGRESS_KEY = "hsk_flashcard_progress_v1";
       const THEME_KEY = "hsk_flashcard_theme_v1";
+      const FILTER_KEY = "hsk_flashcard_filter_v1";
 
       const el = {
         lessonSelect: document.querySelector("#lessonSelect"),
@@ -928,6 +981,13 @@
         modeButtons: [...document.querySelectorAll("[data-mode]")],
         viewButtons: [...document.querySelectorAll("[data-view]")],
         quizButtons: [...document.querySelectorAll("[data-quiz-direction]")],
+        filterStatusButtons: [
+          ...document.querySelectorAll("[data-filter-status]"),
+        ],
+        filterPracticeCountSelect: document.querySelector(
+          "#filterPracticeCount",
+        ),
+        filterInfo: document.querySelector("#filterInfo"),
       };
 
       const getCardId = (card) => `${card.lesson}|${card.front}`;
@@ -1003,6 +1063,33 @@
         } catch (error) {
           state.theme = "light";
         }
+      };
+
+      const loadFilter = () => {
+        try {
+          const saved = localStorage.getItem(FILTER_KEY);
+          if (saved) {
+            const filter = JSON.parse(saved);
+            if (filter.status) state.filterStatus = filter.status;
+            if (filter.practiceCount)
+              state.filterPracticeCount = filter.practiceCount;
+          }
+        } catch (error) {
+          state.filterStatus = "all";
+          state.filterPracticeCount = "all";
+        }
+      };
+
+      const saveFilter = () => {
+        try {
+          localStorage.setItem(
+            FILTER_KEY,
+            JSON.stringify({
+              status: state.filterStatus,
+              practiceCount: state.filterPracticeCount,
+            }),
+          );
+        } catch (error) {}
       };
 
       const saveTheme = () => {
@@ -1092,6 +1179,40 @@
           example: parts.slice(2).join("\n"),
           rawBack: normalize(value),
         };
+      };
+
+      const getFilteredCards = (cards) => {
+        if (!cards) return [];
+        let filtered = [...cards];
+
+        // Filter by status
+        if (state.filterStatus === "unviewed") {
+          filtered = filtered.filter(
+            (card) => !state.viewedCards.has(getCardId(card)),
+          );
+        } else if (state.filterStatus === "marked") {
+          filtered = filtered.filter((card) =>
+            state.markedCards.has(getCardId(card)),
+          );
+        } else if (state.filterStatus === "difficult") {
+          filtered = filtered.filter((card) =>
+            state.difficultCards.has(getCardId(card)),
+          );
+        }
+
+        // Filter by practice count
+        if (state.filterPracticeCount !== "all") {
+          filtered = filtered.filter((card) => {
+            const count = state.practiceCounts[getCardId(card)] || 0;
+            if (state.filterPracticeCount === "0-2") return count <= 2;
+            if (state.filterPracticeCount === "3-5")
+              return count >= 3 && count <= 5;
+            if (state.filterPracticeCount === "5+") return count > 5;
+            return true;
+          });
+        }
+
+        return filtered;
       };
 
       const cardList = () => state.lessons[state.lessonIndex]?.cards || [];
@@ -1203,6 +1324,30 @@
         el.lessonSelect.value = String(state.lessonIndex);
       };
 
+      const updateFilterInfo = () => {
+        const statusText = {
+          all: "Tất cả từ",
+          unviewed: "Chưa học",
+          marked: "Đánh dấu",
+          difficult: "Từ khó",
+        };
+        const countText = {
+          all: "tất cả lần",
+          "0-2": "0–2 lần",
+          "3-5": "3–5 lần",
+          "5+": "5+ lần",
+        };
+        const parts = [];
+        if (state.filterStatus !== "all") {
+          parts.push(statusText[state.filterStatus]);
+        }
+        if (state.filterPracticeCount !== "all") {
+          parts.push(countText[state.filterPracticeCount]);
+        }
+        el.filterInfo.textContent =
+          parts.length > 0 ? `🔍 ${parts.join(" + ")}` : "Không lọc";
+      };
+
       const renderModeButtons = () => {
         el.showPinyin.setAttribute("aria-pressed", String(state.showPinyin));
         el.hidePinyin.setAttribute("aria-pressed", String(!state.showPinyin));
@@ -1240,6 +1385,14 @@
           "aria-pressed",
           String(state.theme === "dark"),
         );
+        el.filterStatusButtons.forEach((button) => {
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.filterStatus === state.filterStatus),
+          );
+        });
+        el.filterPracticeCountSelect.value = state.filterPracticeCount;
+        updateFilterInfo();
         applyTheme();
       };
 
@@ -1969,6 +2122,20 @@
         const file = event.target.files?.[0];
         if (file) handleExcel(file);
       });
+      el.filterStatusButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          state.filterStatus = button.dataset.filterStatus;
+          state.cardIndex = 0;
+          saveFilter();
+          render();
+        });
+      });
+      el.filterPracticeCountSelect.addEventListener("change", () => {
+        state.filterPracticeCount = el.filterPracticeCountSelect.value;
+        state.cardIndex = 0;
+        saveFilter();
+        render();
+      });
       window.addEventListener("keydown", (event) => {
         if (event.key === "ArrowRight") nextPractice(1);
         if (event.key === "ArrowLeft") nextPractice(-1);
@@ -1992,6 +2159,7 @@
         loadViewed();
         loadProgress();
         loadTheme();
+        loadFilter();
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           try {

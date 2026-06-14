@@ -14,6 +14,10 @@
         --line: #dbe4e8;
         --paper: #fffdf8;
         --surface: #f4f1ea;
+        --surface-strong: #fbfcfd;
+        --panel: rgba(255, 253, 248, 0.92);
+        --page-top: #f6f3ee;
+        --page-bottom: #eef3f1;
         --accent: #6a7fd1;
         --accent-strong: #5166b8;
         --accent-soft: #eef2fb;
@@ -22,13 +26,36 @@
         --shadow: 0 18px 40px rgba(75, 88, 106, 0.1);
       }
 
+      body.dark {
+        color-scheme: dark;
+        --ink: #edf2f7;
+        --muted: #a7b3c2;
+        --line: #334155;
+        --paper: #111827;
+        --surface: #1f2937;
+        --surface-strong: #0f172a;
+        --panel: rgba(17, 24, 39, 0.94);
+        --page-top: #0b1220;
+        --page-bottom: #162033;
+        --accent: #8ea2ff;
+        --accent-strong: #bac7ff;
+        --accent-soft: #24314f;
+        --success: #5eb7a2;
+        --warn: #d0a26a;
+        --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      }
+
       * {
         box-sizing: border-box;
       }
 
       body {
         margin: 0;
-        background: linear-gradient(180deg, #f6f3ee 0%, #eef3f1 100%);
+        background: linear-gradient(
+          180deg,
+          var(--page-top) 0%,
+          var(--page-bottom) 100%
+        );
         color: var(--ink);
         font-family:
           "Noto Sans", "Noto Sans SC", "Noto Sans TC", "Segoe UI",
@@ -50,7 +77,7 @@
       }
 
       .sidebar {
-        background: rgba(255, 253, 248, 0.92);
+        background: var(--panel);
         border-right: 1px solid var(--line);
         padding: 22px;
         overflow: auto;
@@ -127,7 +154,7 @@
         width: 100%;
         border: 1px solid var(--line);
         border-radius: 7px;
-        background: #ffffff;
+        background: var(--surface-strong);
         color: var(--ink);
         padding: 10px 11px;
       }
@@ -148,7 +175,7 @@
       .tool-button {
         border: 1px solid var(--line);
         border-radius: 7px;
-        background: #ffffff;
+        background: var(--surface-strong);
         color: var(--ink);
         padding: 9px 10px;
         cursor: pointer;
@@ -193,7 +220,7 @@
         border: 1px solid var(--line);
         border-radius: 7px;
         padding: 10px;
-        background: #fbfcfd;
+        background: var(--surface-strong);
       }
 
       .stat strong {
@@ -258,8 +285,23 @@
         box-shadow: var(--shadow);
         padding: clamp(22px, 4vw, 42px);
         display: grid;
-        grid-template-rows: auto 1fr auto;
+        grid-template-rows: auto auto 1fr auto;
         gap: 18px;
+      }
+
+      .card-progress-header {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .card-progress-header .progress-bar {
+        height: 6px;
+        margin: 0;
+      }
+
+      .card-progress-header .progress-label {
+        font-size: 12px;
       }
 
       .card-meta {
@@ -293,7 +335,7 @@
         padding: 13px 15px;
         border: 1px solid var(--line);
         border-radius: 7px;
-        background: #fbfcfd;
+        background: var(--surface-strong);
         white-space: pre-wrap;
         overflow-wrap: anywhere;
       }
@@ -357,6 +399,20 @@
         border-radius: 10px;
         box-shadow: var(--shadow);
         padding: clamp(20px, 4vw, 36px);
+        display: grid;
+        grid-template-rows: auto auto 1fr;
+        gap: 16px;
+      }
+
+      .practice-panel > .progress-section {
+        padding: 0;
+        border-top: none;
+        margin: 0;
+      }
+
+      .practice-panel > .progress-section .progress-bar {
+        height: 6px;
+        margin-bottom: 6px;
       }
 
       .quiz-question {
@@ -383,7 +439,7 @@
       .match-button {
         border: 1px solid var(--line);
         border-radius: 7px;
-        background: #ffffff;
+        background: var(--surface-strong);
         color: var(--ink);
         padding: 13px 14px;
         cursor: pointer;
@@ -475,7 +531,7 @@
         padding: 10px;
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: #fbfcff;
+        background: var(--surface-strong);
       }
 
       .edit-row input,
@@ -484,7 +540,7 @@
         width: 100%;
         border: 1px solid var(--line);
         border-radius: 7px;
-        background: #ffffff;
+        background: var(--surface-strong);
         color: var(--ink);
         padding: 9px 10px;
         font: inherit;
@@ -507,7 +563,7 @@
         border-radius: 8px;
         overflow: hidden;
         margin-top: 12px;
-        background: #ffffff;
+        background: var(--surface-strong);
       }
 
       .hanzii-container iframe {
@@ -686,6 +742,50 @@
           <div id="fileError" class="error" role="status"></div>
         </div>
 
+        <div class="section">
+          <span class="label">Ôn tập</span>
+          <div class="mode-grid">
+            <button
+              class="chip"
+              id="reviewAllButton"
+              type="button"
+              aria-pressed="true"
+            >
+              Tất cả từ
+            </button>
+            <button
+              class="chip"
+              id="reviewDifficultButton"
+              type="button"
+              aria-pressed="false"
+            >
+              Chỉ từ khó
+            </button>
+          </div>
+        </div>
+
+        <div class="section">
+          <span class="label">Giao diện</span>
+          <div class="segmented">
+            <button
+              class="chip"
+              id="lightThemeButton"
+              type="button"
+              aria-pressed="true"
+            >
+              Sáng
+            </button>
+            <button
+              class="chip"
+              id="darkThemeButton"
+              type="button"
+              aria-pressed="false"
+            >
+              Tối
+            </button>
+          </div>
+        </div>
+
         <div class="section stats">
           <div class="stat">
             <strong id="cardCount">0</strong>
@@ -788,13 +888,19 @@
         match: null,
         voices: [],
         markedCards: new Set(),
+        difficultCards: new Set(),
         viewedCards: new Set(),
         progress: { flashcards: 0, quizzes: 0, matches: 0 },
+        practiceCounts: {},
+        reviewDifficultOnly: false,
+        theme: "light",
       };
       const STORAGE_KEY = "hsk_flashcard_lessons_v2";
       const MARKED_KEY = "hsk_flashcard_marked_v1";
+      const DIFFICULT_KEY = "hsk_flashcard_difficult_v1";
       const VIEWED_KEY = "hsk_flashcard_viewed_v1";
       const PROGRESS_KEY = "hsk_flashcard_progress_v1";
+      const THEME_KEY = "hsk_flashcard_theme_v1";
 
       const el = {
         lessonSelect: document.querySelector("#lessonSelect"),
@@ -809,6 +915,10 @@
         excelInput: document.querySelector("#excelInput"),
         showPinyin: document.querySelector("#showPinyin"),
         hidePinyin: document.querySelector("#hidePinyin"),
+        reviewAllButton: document.querySelector("#reviewAllButton"),
+        reviewDifficultButton: document.querySelector("#reviewDifficultButton"),
+        lightThemeButton: document.querySelector("#lightThemeButton"),
+        darkThemeButton: document.querySelector("#darkThemeButton"),
         flipButton: document.querySelector("#flipButton"),
         prevButton: document.querySelector("#prevButton"),
         nextButton: document.querySelector("#nextButton"),
@@ -836,6 +946,24 @@
           localStorage.setItem(
             MARKED_KEY,
             JSON.stringify([...state.markedCards]),
+          );
+        } catch (error) {}
+      };
+
+      const loadDifficult = () => {
+        try {
+          const saved = localStorage.getItem(DIFFICULT_KEY);
+          if (saved) state.difficultCards = new Set(JSON.parse(saved));
+        } catch (error) {
+          state.difficultCards = new Set();
+        }
+      };
+
+      const saveDifficult = () => {
+        try {
+          localStorage.setItem(
+            DIFFICULT_KEY,
+            JSON.stringify([...state.difficultCards]),
           );
         } catch (error) {}
       };
@@ -868,6 +996,25 @@
         }
       };
 
+      const loadTheme = () => {
+        try {
+          const saved = localStorage.getItem(THEME_KEY);
+          if (saved === "dark" || saved === "light") state.theme = saved;
+        } catch (error) {
+          state.theme = "light";
+        }
+      };
+
+      const saveTheme = () => {
+        try {
+          localStorage.setItem(THEME_KEY, state.theme);
+        } catch (error) {}
+      };
+
+      const applyTheme = () => {
+        document.body.classList.toggle("dark", state.theme === "dark");
+      };
+
       const saveProgress = () => {
         try {
           localStorage.setItem(PROGRESS_KEY, JSON.stringify(state.progress));
@@ -891,6 +1038,35 @@
         }
         saveMarked();
         render();
+      };
+
+      const toggleDifficultCard = (card) => {
+        if (!card) return;
+        const id = getCardId(card);
+        if (state.difficultCards.has(id)) {
+          state.difficultCards.delete(id);
+        } else {
+          state.difficultCards.add(id);
+        }
+        saveDifficult();
+        render();
+      };
+
+      const incrementPracticeCount = (card) => {
+        if (!card) return;
+        const id = getCardId(card);
+        state.practiceCounts[id] = (state.practiceCounts[id] || 0) + 1;
+      };
+
+      const getPracticeEligibleCards = () => {
+        const cards = cardList();
+        const filtered = state.reviewDifficultOnly
+          ? cards.filter((card) => state.difficultCards.has(getCardId(card)))
+          : cards;
+        const underLimit = filtered.filter(
+          (card) => (state.practiceCounts[getCardId(card)] || 0) < 2,
+        );
+        return underLimit.length ? underLimit : filtered;
       };
 
       const incrementProgress = (type) => {
@@ -984,6 +1160,7 @@
         state.flipped = false;
         state.quiz = null;
         state.match = null;
+        state.practiceCounts = {};
       };
 
       const setLessons = (lessons) => {
@@ -1047,16 +1224,38 @@
             String(button.dataset.quizDirection === state.quizDirection),
           );
         });
+        el.reviewAllButton?.setAttribute(
+          "aria-pressed",
+          String(!state.reviewDifficultOnly),
+        );
+        el.reviewDifficultButton?.setAttribute(
+          "aria-pressed",
+          String(state.reviewDifficultOnly),
+        );
+        el.lightThemeButton?.setAttribute(
+          "aria-pressed",
+          String(state.theme === "light"),
+        );
+        el.darkThemeButton?.setAttribute(
+          "aria-pressed",
+          String(state.theme === "dark"),
+        );
+        applyTheme();
       };
 
       const renderFrame = () => {
         renderModeButtons();
         const lessons = state.lessons;
-        const cards = cardList();
-        const totalCards = lessons.reduce(
-          (sum, lesson) => sum + lesson.cards.length,
-          0,
-        );
+        const cards = state.reviewDifficultOnly
+          ? cardList().filter((card) =>
+              state.difficultCards.has(getCardId(card)),
+            )
+          : cardList();
+        const totalCards = state.reviewDifficultOnly
+          ? allCards().filter((card) =>
+              state.difficultCards.has(getCardId(card)),
+            ).length
+          : lessons.reduce((sum, lesson) => sum + lesson.cards.length, 0);
         el.cardCount.textContent = String(totalCards);
         el.lessonCount.textContent = String(lessons.length);
         el.flipButton.textContent =
@@ -1084,8 +1283,14 @@
 
       const renderFlashcard = () => {
         if (!renderFrame()) return;
-        const cards = cardList();
-        const card = currentCard();
+        const cards = state.reviewDifficultOnly
+          ? getPracticeEligibleCards().length
+            ? getPracticeEligibleCards()
+            : cardList().filter((item) =>
+                state.difficultCards.has(getCardId(item)),
+              )
+          : cardList();
+        const card = cards[state.cardIndex] || cards[0] || null;
         el.progressText.textContent = `${state.cardIndex + 1} / ${cards.length}`;
         el.cardIndex.textContent = `${state.cardIndex + 1} / ${cards.length}`;
 
@@ -1103,8 +1308,24 @@
           state.viewedCards.has(getCardId(item)),
         ).length;
         const viewedPercent =
-          Math.round((viewedCount / cards.length) * 100) || 0;
+          Math.round((viewedCount / Math.max(cards.length, 1)) * 100) || 0;
         const isMarked = state.markedCards.has(getCardId(card));
+        const isDifficult = state.difficultCards.has(getCardId(card));
+        const currentPercent =
+          Math.round(
+            ((state.cardIndex + 1) / Math.max(cards.length, 1)) * 100,
+          ) || 0;
+
+        html += `
+          <div class="card-progress-header">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${currentPercent}%"></div>
+            </div>
+            <div class="progress-label">
+              <span>Thẻ: ${state.cardIndex + 1}/${cards.length}</span>
+            </div>
+          </div>
+        `;
 
         if (showHanzi)
           html += `<div class="hanzi" lang="zh-Hans">${escapeHtml(card.front)}</div>`;
@@ -1113,7 +1334,7 @@
           html += field("Nghĩa", card.back, "meaning");
         if (revealBack) html += field("Ví dụ", card.example, "example");
         if (!html)
-          html =
+          html +=
             '<div class="field">Không có nội dung để hiển thị trong chế độ này.</div>';
         if (state.flipped && card.front) {
           const hanziiUrl = `https://hanzii.net/search/word/${encodeURIComponent(card.front)}?hl=vi`;
@@ -1126,9 +1347,14 @@
             </div>
             <div class="progress-label">
               <span>Đã xem: ${viewedCount}/${cards.length}</span>
-              <button type="button" class="tool-button" id="markButton" style="padding: 4px 8px; font-size: 12px;" ${isMarked ? 'style="background: var(--accent); color: white; border-color: var(--accent);"' : ""}>
-                ${isMarked ? "★ Đã đánh dấu" : "☆ Đánh dấu"}
-              </button>
+              <div class="nav-buttons">
+                <button type="button" class="tool-button" id="markButton" style="padding: 4px 8px; font-size: 12px; ${isMarked ? "background: var(--accent); color: white; border-color: var(--accent);" : ""}">
+                  ${isMarked ? "★ Đã đánh dấu" : "☆ Đánh dấu"}
+                </button>
+                <button type="button" class="tool-button" id="difficultButton" style="padding: 4px 8px; font-size: 12px; ${isDifficult ? "background: #b07a3f; color: white; border-color: #b07a3f;" : ""}">
+                  ${isDifficult ? "◆ Từ khó" : "◇ Đánh dấu khó"}
+                </button>
+              </div>
             </div>
           </div>
         `;
@@ -1136,11 +1362,12 @@
       };
 
       const createQuiz = () => {
-        const cards = cardList().filter(
+        const cards = getPracticeEligibleCards().filter(
           (card) => promptText(card) && answerText(card),
         );
         if (!cards.length) return null;
         const card = cards[Math.floor(Math.random() * cards.length)];
+        incrementPracticeCount(card);
         markCardViewed(card);
         const correct = answerText(card);
         const pool = allCards()
@@ -1194,8 +1421,22 @@
           quiz.answered && quiz.card.front
             ? `<div class="hanzii-container"><iframe src="https://hanzii.net/search/word/${encodeURIComponent(quiz.card.front)}?hl=vi" title="Hanzii Dictionary"></iframe></div>`
             : "";
+        const quizProgress =
+          Math.round(
+            ((state.progress.quizzes + (quiz.answered ? 1 : 0)) /
+              Math.max(state.progress.quizzes + 10, 10)) *
+              100,
+          ) || 0;
         el.cardContent.innerHTML = `
         <div class="practice-panel">
+          <div class="progress-section">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${quizProgress}%"></div>
+            </div>
+            <div class="progress-label">
+              <span>Câu trả lời: ${state.progress.quizzes}${quiz.answered ? "+1" : ""}</span>
+            </div>
+          </div>
           <p class="quiz-question ${questionClass}" lang="${state.quizDirection === "zh-vi" ? "zh-Hans" : "vi"}">${escapeHtml(promptText(quiz.card))}</p>
           ${state.showPinyin && quiz.card.pinyin ? `<div class="field pinyin"><strong>Pinyin</strong>${escapeHtml(quiz.card.pinyin)}</div>` : ""}
           <div class="option-grid">${options}</div>
@@ -1207,9 +1448,12 @@
 
       const createMatch = () => {
         const cards = shuffleArray(
-          cardList().filter((card) => card.front && card.back),
+          getPracticeEligibleCards().filter((card) => card.front && card.back),
         ).slice(0, 6);
-        cards.forEach((card) => markCardViewed(card));
+        cards.forEach((card) => {
+          incrementPracticeCount(card);
+          markCardViewed(card);
+        });
         return {
           pairs: cards.map((card, index) => ({ id: String(index), card })),
           leftOrder: shuffleArray(cards.map((_, index) => String(index))),
@@ -1251,8 +1495,18 @@
             return `<button class="match-button${matched ? " matched" : ""}" data-match-right="${id}" type="button" ${matched ? "disabled" : ""}>${escapeHtml(pair.card.back)}</button>`;
           })
           .join("");
+        const matchProgress =
+          Math.round((match.matched.length / match.pairs.length) * 100) || 0;
         el.cardContent.innerHTML = `
         <div class="practice-panel">
+          <div class="progress-section">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${matchProgress}%"></div>
+            </div>
+            <div class="progress-label">
+              <span>Đã ghép: ${match.matched.length}/${match.pairs.length}</span>
+            </div>
+          </div>
           <div class="match-grid">
             <div class="match-column"><h2>中文</h2>${left}</div>
             <div class="match-column"><h2>Tiếng Việt</h2>${right}</div>
@@ -1533,6 +1787,7 @@
           state.flipped = false;
           state.quiz = null;
           state.match = null;
+          state.practiceCounts = {};
           render();
         });
       });
@@ -1550,6 +1805,32 @@
           state.flipped = false;
           render();
         });
+      });
+      el.reviewAllButton?.addEventListener("click", () => {
+        state.reviewDifficultOnly = false;
+        state.cardIndex = 0;
+        state.practiceCounts = {};
+        state.quiz = null;
+        state.match = null;
+        render();
+      });
+      el.reviewDifficultButton?.addEventListener("click", () => {
+        state.reviewDifficultOnly = true;
+        state.cardIndex = 0;
+        state.practiceCounts = {};
+        state.quiz = null;
+        state.match = null;
+        render();
+      });
+      el.lightThemeButton?.addEventListener("click", () => {
+        state.theme = "light";
+        saveTheme();
+        render();
+      });
+      el.darkThemeButton?.addEventListener("click", () => {
+        state.theme = "dark";
+        saveTheme();
+        render();
       });
       el.flipButton.addEventListener("click", () => {
         if (state.view === "flashcard") {
@@ -1580,6 +1861,11 @@
         const markButton = event.target.closest("#markButton");
         if (markButton) {
           toggleMarkCard(currentCard());
+          return;
+        }
+        const difficultButton = event.target.closest("#difficultButton");
+        if (difficultButton) {
+          toggleDifficultCard(currentCard());
           return;
         }
         const addButton = event.target.closest("#addCardButton");
@@ -1702,8 +1988,10 @@
 
       const loadBundledData = () => {
         loadMarked();
+        loadDifficult();
         loadViewed();
         loadProgress();
+        loadTheme();
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           try {

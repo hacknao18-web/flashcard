@@ -633,6 +633,150 @@
         font-weight: 800;
       }
 
+      .notebook-panel {
+        width: min(1120px, 100%);
+        background: var(--paper);
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        padding: clamp(18px, 3vw, 28px);
+        display: grid;
+        gap: 16px;
+      }
+
+      .notebook-toolbar,
+      .notebook-actions,
+      .notebook-study-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .notebook-toolbar {
+        justify-content: space-between;
+      }
+
+      .notebook-controls {
+        display: grid;
+        grid-template-columns: minmax(180px, 1.3fr) minmax(120px, 0.7fr) minmax(120px, 0.7fr);
+        gap: 8px;
+        flex: 1;
+      }
+
+      .notebook-controls input,
+      .notebook-controls select,
+      .notebook-form input,
+      .notebook-form select,
+      .notebook-form textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--surface-strong);
+        color: var(--ink);
+        padding: 10px 11px;
+        font: inherit;
+      }
+
+      .notebook-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-strong);
+        padding: 12px;
+      }
+
+      .notebook-form textarea,
+      .notebook-form .full-row {
+        grid-column: 1 / -1;
+      }
+
+      .notebook-form textarea {
+        min-height: 72px;
+        resize: vertical;
+      }
+
+      .notebook-list {
+        display: grid;
+        gap: 10px;
+        max-height: 58vh;
+        overflow: auto;
+        padding-right: 4px;
+      }
+
+      .notebook-item {
+        display: grid;
+        grid-template-columns: minmax(130px, 0.9fr) minmax(0, 1.3fr) auto;
+        gap: 12px;
+        align-items: start;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-strong);
+        padding: 12px;
+      }
+
+      .notebook-word {
+        display: grid;
+        gap: 4px;
+      }
+
+      .notebook-word strong {
+        font-size: 26px;
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+      }
+
+      .notebook-word span,
+      .notebook-meta,
+      .notebook-note {
+        color: var(--muted);
+        font-size: 13px;
+        overflow-wrap: anywhere;
+      }
+
+      .notebook-detail {
+        display: grid;
+        gap: 6px;
+      }
+
+      .notebook-badge {
+        width: fit-content;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+        padding: 3px 8px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .notebook-study-card {
+        min-height: 360px;
+        display: grid;
+        place-items: center;
+        gap: 14px;
+        text-align: center;
+      }
+
+      .notebook-study-card .hanzi {
+        font-size: clamp(54px, 10vw, 96px);
+      }
+
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 20;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        color: var(--ink);
+        box-shadow: var(--shadow);
+        padding: 12px 14px;
+        font-weight: 700;
+      }
+
       .match-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -770,12 +914,15 @@
         .option-grid,
         .dashboard-grid,
         .chart-grid,
+        .notebook-controls,
+        .notebook-form,
         .match-grid,
         .edit-row {
           grid-template-columns: 1fr;
         }
 
         .level-row,
+        .notebook-item,
         .wrong-word-item {
           grid-template-columns: 1fr;
         }
@@ -826,6 +973,14 @@
               aria-pressed="false"
             >
               Thi thử HSK mini
+            </button>
+            <button
+              class="chip"
+              data-view="notebook"
+              type="button"
+              aria-pressed="false"
+            >
+              &#128218; Sổ tay từ vựng
             </button>
             <button
               class="chip"
@@ -1150,6 +1305,19 @@
         },
         sessionStartedAt: Date.now(),
         chartInstances: {},
+        notebook: {
+          items: [],
+          query: "",
+          levelFilter: "all",
+          sort: "newest",
+          favoriteOnly: false,
+          mode: "list",
+          editingId: "",
+          studyIndex: 0,
+          studyFlipped: false,
+          autoFlip: false,
+          autoTimer: null,
+        },
         practiceCounts: {},
         reviewDifficultOnly: false,
         theme: "light",
@@ -1162,6 +1330,7 @@
       const VIEWED_KEY = "hsk_flashcard_viewed_v1";
       const PROGRESS_KEY = "hsk_flashcard_progress_v1";
       const LEARNING_STATS_KEY = "hsk_learning_stats_v1";
+      const NOTEBOOK_KEY = "hsk_vocab_notebook_v1";
       const THEME_KEY = "hsk_flashcard_theme_v1";
       const FILTER_KEY = "hsk_flashcard_filter_v1";
 
@@ -1306,6 +1475,146 @@
             JSON.stringify(state.learningStats),
           );
         } catch (error) {}
+      };
+
+      const normalizeNotebookItem = (item = {}) => ({
+        id: normalize(item.id) || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        hanzi: normalize(item.hanzi || item.front),
+        pinyin: normalize(item.pinyin),
+        meaning: normalize(item.meaning || item.back),
+        hskLevel: normalize(item.hskLevel || item.level || item.lesson || "HSK"),
+        example: normalize(item.example),
+        addedAt: normalize(item.addedAt) || new Date().toISOString(),
+        note: normalize(item.note),
+        favorite: Boolean(item.favorite),
+      });
+
+      const loadNotebook = () => {
+        try {
+          const saved = localStorage.getItem(NOTEBOOK_KEY);
+          state.notebook.items = saved
+            ? JSON.parse(saved).map(normalizeNotebookItem).filter((item) => item.hanzi)
+            : [];
+        } catch (error) {
+          state.notebook.items = [];
+        }
+      };
+
+      const saveNotebook = () => {
+        try {
+          localStorage.setItem(NOTEBOOK_KEY, JSON.stringify(state.notebook.items));
+        } catch (error) {}
+      };
+
+      const showToast = (message) => {
+        document.querySelector(".toast")?.remove();
+        const toast = document.createElement("div");
+        toast.className = "toast";
+        toast.textContent = message;
+        document.body.append(toast);
+        window.setTimeout(() => toast.remove(), 2200);
+      };
+
+      const hskLevelFromCard = (card) => inferHskLevel(card || {});
+
+      const notebookItemFromCard = (card, favorite = false) => {
+        if (!card) return null;
+        return normalizeNotebookItem({
+          hanzi: card.front,
+          pinyin: card.pinyin,
+          meaning: card.back,
+          hskLevel: hskLevelFromCard(card),
+          example: card.example,
+          note: "",
+          favorite,
+        });
+      };
+
+      const findNotebookItem = (item) =>
+        state.notebook.items.find(
+          (saved) =>
+            saved.hanzi === item.hanzi &&
+            (saved.pinyin === item.pinyin || saved.meaning === item.meaning),
+        );
+
+      const upsertNotebookItem = (item, options = {}) => {
+        if (!item) {
+          showToast("Chưa có từ để thêm vào sổ tay.");
+          return null;
+        }
+        const normalized = normalizeNotebookItem(item);
+        if (!normalized.hanzi) return null;
+        const existing = findNotebookItem(normalized);
+        if (existing) {
+          Object.assign(existing, {
+            ...existing,
+            ...normalized,
+            id: existing.id,
+            addedAt: existing.addedAt || normalized.addedAt,
+            favorite: options.favorite ? true : normalized.favorite || existing.favorite,
+          });
+          saveNotebook();
+          if (!options.silent)
+            showToast(options.favorite ? "Đã thêm vào yêu thích." : "Đã cập nhật sổ tay.");
+          return existing;
+        }
+        normalized.favorite = options.favorite ? true : normalized.favorite;
+        state.notebook.items.unshift(normalized);
+        saveNotebook();
+        if (!options.silent)
+          showToast(options.favorite ? "Đã thêm vào yêu thích." : "Đã thêm vào sổ tay.");
+        return normalized;
+      };
+
+      const removeNotebookItem = (id) => {
+        state.notebook.items = state.notebook.items.filter((item) => item.id !== id);
+        saveNotebook();
+        showToast("Đã xóa từ khỏi sổ tay.");
+      };
+
+      const currentLearningCard = () => {
+        if (state.view === "quiz") return state.quiz?.card || null;
+        if (state.view === "miniExam") {
+          const question = state.miniExam?.questions[state.miniExam.currentIndex];
+          return question?.card || null;
+        }
+        return currentCard();
+      };
+
+      const notebookLevels = () => [
+        ...new Set(
+          state.notebook.items
+            .map((item) => item.hskLevel)
+            .filter(Boolean)
+            .sort((a, b) => a.localeCompare(b, "vi")),
+        ),
+      ];
+
+      const filteredNotebookItems = () => {
+        const query = normalize(state.notebook.query).toLowerCase();
+        const filtered = state.notebook.items.filter((item) => {
+          const matchesQuery =
+            !query ||
+            [item.hanzi, item.pinyin, item.meaning]
+              .join(" ")
+              .toLowerCase()
+              .includes(query);
+          const matchesLevel =
+            state.notebook.levelFilter === "all" ||
+            item.hskLevel === state.notebook.levelFilter;
+          const matchesFavorite =
+            !state.notebook.favoriteOnly || item.favorite;
+          return matchesQuery && matchesLevel && matchesFavorite;
+        });
+        return filtered.sort((a, b) => {
+          if (state.notebook.sort === "oldest") {
+            return new Date(a.addedAt) - new Date(b.addedAt);
+          }
+          if (state.notebook.sort === "az") {
+            return a.hanzi.localeCompare(b.hanzi, "zh-Hans");
+          }
+          return new Date(b.addedAt) - new Date(a.addedAt);
+        });
       };
 
       const dateKey = (date = new Date()) => {
@@ -1806,6 +2115,10 @@
         if (state.view === "progress") {
           el.flipButton.textContent = "Làm mới";
         }
+        if (state.view === "notebook") {
+          el.flipButton.textContent =
+            state.notebook.mode === "study" ? "Lật thẻ" : "Làm mới";
+        }
 
         if (!cards.length) {
           el.lessonTitle.textContent = "Không có thẻ";
@@ -1895,6 +2208,12 @@
                 </button>
                 <button type="button" class="tool-button" id="difficultButton" style="padding: 4px 8px; font-size: 12px; ${isDifficult ? "background: #b07a3f; color: white; border-color: #b07a3f;" : ""}">
                   ${isDifficult ? "◆ Từ khó" : "◇ Đánh dấu khó"}
+                </button>
+                <button type="button" class="tool-button" data-favorite-current style="padding: 4px 8px; font-size: 12px;">
+                  ⭐ Yêu thích
+                </button>
+                <button type="button" class="tool-button" data-add-current-notebook style="padding: 4px 8px; font-size: 12px;">
+                  ➕ Thêm vào sổ tay
                 </button>
               </div>
             </div>
@@ -2047,6 +2366,14 @@
           quiz.answered && quiz.card.front
             ? `<div class="hanzii-container"><iframe src="https://hanzii.net/search/word/${encodeURIComponent(quiz.card.front)}?hl=vi" title="Hanzii Dictionary"></iframe></div>`
             : "";
+        const quizCardStats =
+          state.learningStats.cardStats[getCardId(quiz.card)] || {};
+        const quickNotebook =
+          quiz.answered &&
+          quiz.selected !== quiz.correct &&
+          (quizCardStats.wrong || 0) >= 2
+            ? '<button class="tool-button" data-add-current-notebook type="button">➕ Thêm từ hay sai vào sổ tay</button>'
+            : "";
         const quizProgress =
           Math.round(
             ((state.progress.quizzes + (quiz.answered ? 1 : 0)) /
@@ -2067,6 +2394,7 @@
           ${state.showPinyin && quiz.card.pinyin ? `<div class="field pinyin"><strong>Pinyin</strong>${escapeHtml(quiz.card.pinyin)}</div>` : ""}
           <div class="option-grid">${options}</div>
           <div class="feedback">${escapeHtml(feedback)}</div>
+          ${quickNotebook}
           ${hanziiSection}
         </div>
       `;
@@ -2385,6 +2713,285 @@
         renderProgressCharts(summary);
       };
 
+      const stopNotebookAutoFlip = () => {
+        if (state.notebook.autoTimer) {
+          window.clearTimeout(state.notebook.autoTimer);
+          state.notebook.autoTimer = null;
+        }
+      };
+
+      const scheduleNotebookAutoFlip = () => {
+        stopNotebookAutoFlip();
+        if (
+          state.view !== "notebook" ||
+          state.notebook.mode !== "study" ||
+          !state.notebook.autoFlip
+        )
+          return;
+        state.notebook.autoTimer = window.setTimeout(() => {
+          state.notebook.studyFlipped = !state.notebook.studyFlipped;
+          render();
+        }, 3500);
+      };
+
+      const notebookFormValue = (name) =>
+        normalize(el.cardContent.querySelector(`[data-notebook-field="${name}"]`)?.value);
+
+      const saveNotebookForm = () => {
+        const editingId = state.notebook.editingId;
+        const existing = state.notebook.items.find((item) => item.id === editingId);
+        const item = normalizeNotebookItem({
+          id: editingId || undefined,
+          hanzi: notebookFormValue("hanzi"),
+          pinyin: notebookFormValue("pinyin"),
+          meaning: notebookFormValue("meaning"),
+          hskLevel: notebookFormValue("hskLevel") || "HSK",
+          example: notebookFormValue("example"),
+          note: notebookFormValue("note"),
+          addedAt: existing?.addedAt,
+          favorite: existing?.favorite,
+        });
+        if (!item.hanzi) {
+          showToast("Hãy nhập chữ Hán trước.");
+          return;
+        }
+        if (existing) {
+          Object.assign(existing, item, {
+            id: existing.id,
+            addedAt: existing.addedAt,
+            favorite: existing.favorite,
+          });
+          showToast("Đã lưu chỉnh sửa.");
+        } else {
+          state.notebook.items.unshift(item);
+          showToast("Đã thêm từ mới.");
+        }
+        state.notebook.editingId = "";
+        saveNotebook();
+        render();
+      };
+
+      const exportNotebookJson = () => {
+        const blob = new Blob([JSON.stringify(state.notebook.items, null, 2)], {
+          type: "application/json;charset=utf-8",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "hsk_vocab_notebook.json";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      };
+
+      const exportNotebookExcel = () => {
+        if (!window.XLSX) {
+          showToast("Chưa tải được thư viện Excel.");
+          return;
+        }
+        const rows = state.notebook.items.map((item) => ({
+          Hanzi: item.hanzi,
+          Pinyin: item.pinyin,
+          Meaning: item.meaning,
+          HSK: item.hskLevel,
+          Example: item.example,
+          AddedAt: item.addedAt,
+          Note: item.note,
+          Favorite: item.favorite ? "yes" : "no",
+        }));
+        const sheet = XLSX.utils.json_to_sheet(rows);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, sheet, "Notebook");
+        XLSX.writeFile(workbook, "hsk_vocab_notebook.xlsx");
+      };
+
+      const parseNotebookRows = (rows) =>
+        rows
+          .map((row) =>
+            normalizeNotebookItem({
+              hanzi: row.Hanzi || row.hanzi || row.Front || row.front || row["Chữ Hán"],
+              pinyin: row.Pinyin || row.pinyin,
+              meaning:
+                row.Meaning ||
+                row.meaning ||
+                row.Back ||
+                row.back ||
+                row["Nghĩa tiếng Việt"],
+              hskLevel: row.HSK || row.hskLevel || row.Level || row.level,
+              example: row.Example || row.example || row["Ví dụ"],
+              addedAt: row.AddedAt || row.addedAt,
+              note: row.Note || row.note || row["Ghi chú"],
+              favorite: /yes|true|1|có/i.test(String(row.Favorite || row.favorite || "")),
+            }),
+          )
+          .filter((item) => item.hanzi);
+
+      const importNotebookFile = async (file) => {
+        try {
+          let imported = [];
+          if (/\.json$/i.test(file.name)) {
+            const parsed = JSON.parse(await file.text());
+            imported = (Array.isArray(parsed) ? parsed : parsed.items || []).map(
+              normalizeNotebookItem,
+            );
+          } else {
+            if (!window.XLSX) {
+              showToast("Chưa tải được thư viện Excel.");
+              return;
+            }
+            const buffer = await file.arrayBuffer();
+            const workbook = XLSX.read(buffer, { type: "array" });
+            imported = workbook.SheetNames.flatMap((name) =>
+              parseNotebookRows(
+                XLSX.utils.sheet_to_json(workbook.Sheets[name], { defval: "" }),
+              ),
+            );
+          }
+          imported.filter((item) => item.hanzi).forEach((item) =>
+            upsertNotebookItem(item, { silent: true }),
+          );
+          saveNotebook();
+          showToast(`Đã nhập ${imported.length} mục vào sổ tay.`);
+          render();
+        } catch (error) {
+          showToast("Không nhập được file sổ tay.");
+        }
+      };
+
+      const renderNotebookForm = () => {
+        const item =
+          state.notebook.items.find((entry) => entry.id === state.notebook.editingId) ||
+          {};
+        return `
+          <div class="notebook-form">
+            <input data-notebook-field="hanzi" value="${escapeHtml(item.hanzi || "")}" placeholder="Chữ Hán" lang="zh-Hans" />
+            <input data-notebook-field="pinyin" value="${escapeHtml(item.pinyin || "")}" placeholder="Pinyin" />
+            <input data-notebook-field="meaning" value="${escapeHtml(item.meaning || "")}" placeholder="Nghĩa tiếng Việt" />
+            <input data-notebook-field="hskLevel" value="${escapeHtml(item.hskLevel || "")}" placeholder="Cấp độ HSK" />
+            <textarea data-notebook-field="example" placeholder="Ví dụ minh họa">${escapeHtml(item.example || "")}</textarea>
+            <textarea data-notebook-field="note" placeholder="Ghi chú cá nhân">${escapeHtml(item.note || "")}</textarea>
+            <div class="notebook-actions full-row">
+              <button class="tool-button primary" data-notebook-save type="button">${state.notebook.editingId ? "Lưu chỉnh sửa" : "Thêm từ mới"}</button>
+              <button class="tool-button" data-notebook-clear type="button">Làm trống</button>
+            </div>
+          </div>
+        `;
+      };
+
+      const renderNotebookList = (items) => {
+        if (!items.length) {
+          return '<div class="field">Sổ tay chưa có từ phù hợp.</div>';
+        }
+        return items
+          .map(
+            (item) => `
+              <div class="notebook-item">
+                <div class="notebook-word">
+                  <strong lang="zh-Hans">${escapeHtml(item.hanzi)}</strong>
+                  <span>${escapeHtml(item.pinyin)}</span>
+                  <span class="notebook-badge">${escapeHtml(item.hskLevel || "HSK")}</span>
+                </div>
+                <div class="notebook-detail">
+                  <strong>${escapeHtml(item.meaning)}</strong>
+                  ${item.example ? `<span>Ví dụ: ${escapeHtml(item.example)}</span>` : ""}
+                  ${item.note ? `<span class="notebook-note">Ghi chú: ${escapeHtml(item.note)}</span>` : ""}
+                  <span class="notebook-meta">Ngày thêm: ${escapeHtml(new Date(item.addedAt).toLocaleDateString("vi-VN"))}</span>
+                </div>
+                <div class="notebook-actions">
+                  <button class="tool-button" data-notebook-favorite="${item.id}" type="button">${item.favorite ? "★" : "☆"}</button>
+                  <button class="tool-button" data-notebook-edit="${item.id}" type="button">Sửa</button>
+                  <button class="tool-button" data-notebook-delete="${item.id}" type="button">Xóa</button>
+                </div>
+              </div>
+            `,
+          )
+          .join("");
+      };
+
+      const renderNotebookStudy = (items) => {
+        if (!items.length) {
+          stopNotebookAutoFlip();
+          return '<div class="field">Chưa có từ để học lại.</div>';
+        }
+        state.notebook.studyIndex =
+          (state.notebook.studyIndex + items.length) % items.length;
+        const item = items[state.notebook.studyIndex];
+        scheduleNotebookAutoFlip();
+        return `
+          <div class="notebook-study-card">
+            <div class="notebook-study-controls">
+              <button class="tool-button" data-notebook-random type="button">Ngẫu nhiên</button>
+              <button class="tool-button ${state.notebook.autoFlip ? "primary" : ""}" data-notebook-autoflip type="button">Tự lật</button>
+              <button class="tool-button ${state.notebook.favoriteOnly ? "primary" : ""}" data-notebook-favonly type="button">Chỉ yêu thích</button>
+            </div>
+            <div class="hanzi" lang="zh-Hans">${escapeHtml(item.hanzi)}</div>
+            ${
+              state.notebook.studyFlipped
+                ? `
+                  ${field("Pinyin", item.pinyin, "pinyin")}
+                  ${field("Nghĩa", item.meaning, "meaning")}
+                  ${field("Ví dụ", item.example, "example")}
+                  ${field("Ghi chú", item.note)}
+                `
+                : '<div class="hint">Bấm Lật thẻ để xem đáp án.</div>'
+            }
+            <div class="progress-label">
+              <span>${state.notebook.studyIndex + 1}/${items.length}</span>
+              <span>${escapeHtml(item.hskLevel || "HSK")}</span>
+            </div>
+          </div>
+        `;
+      };
+
+      const renderNotebook = () => {
+        if (!renderFrame()) return;
+        const levels = notebookLevels();
+        const items = filteredNotebookItems();
+        const levelOptions = [
+          '<option value="all">Tất cả HSK</option>',
+          ...levels.map(
+            (level) =>
+              `<option value="${escapeHtml(level)}" ${state.notebook.levelFilter === level ? "selected" : ""}>${escapeHtml(level)}</option>`,
+          ),
+        ].join("");
+        el.lessonTitle.textContent = "📒 Sổ tay từ vựng";
+        el.progressText.textContent = `${state.notebook.items.length} từ đã lưu`;
+        el.cardLesson.textContent = "Notebook";
+        el.cardIndex.textContent =
+          state.notebook.mode === "study" ? "Ôn tập" : `${items.length} mục`;
+        el.cardContent.innerHTML = `
+          <div class="notebook-panel">
+            <div class="notebook-toolbar">
+              <div class="notebook-controls">
+                <input id="notebookSearch" value="${escapeHtml(state.notebook.query)}" placeholder="Tìm chữ Hán, pinyin, nghĩa..." />
+                <select id="notebookLevelFilter">${levelOptions}</select>
+                <select id="notebookSort">
+                  <option value="newest" ${state.notebook.sort === "newest" ? "selected" : ""}>Mới nhất</option>
+                  <option value="oldest" ${state.notebook.sort === "oldest" ? "selected" : ""}>Cũ nhất</option>
+                  <option value="az" ${state.notebook.sort === "az" ? "selected" : ""}>A-Z</option>
+                </select>
+              </div>
+              <div class="notebook-actions">
+                <button class="tool-button ${state.notebook.mode === "list" ? "primary" : ""}" data-notebook-mode="list" type="button">Danh sách</button>
+                <button class="tool-button ${state.notebook.mode === "study" ? "primary" : ""}" data-notebook-mode="study" type="button">Flashcard</button>
+              </div>
+            </div>
+            <div class="notebook-actions">
+              <button class="tool-button" data-notebook-export-json type="button">Xuất JSON</button>
+              <button class="tool-button" data-notebook-export-xlsx type="button">Xuất Excel</button>
+              <label class="tool-button" for="notebookImportInput">Nhập file</label>
+              <input id="notebookImportInput" type="file" accept=".json,.xlsx,.xls" style="display:none" />
+            </div>
+            ${
+              state.notebook.mode === "list"
+                ? `${renderNotebookForm()}<div class="notebook-list">${renderNotebookList(items)}</div>`
+                : renderNotebookStudy(items)
+            }
+          </div>
+        `;
+      };
+
       const createMatch = () => {
         const cards = shuffleArray(
           getPracticeEligibleCards().filter((card) => card.front && card.back),
@@ -2490,6 +3097,7 @@
       };
 
       const render = () => {
+        if (state.view !== "notebook") stopNotebookAutoFlip();
         if (state.view === "quiz") {
           renderQuiz();
           return;
@@ -2504,6 +3112,10 @@
         }
         if (state.view === "progress") {
           renderProgressDashboard();
+          return;
+        }
+        if (state.view === "notebook") {
+          renderNotebook();
           return;
         }
         if (state.view === "manage") {
@@ -2552,6 +3164,16 @@
           render();
           return;
         }
+        if (state.view === "notebook") {
+          const items = filteredNotebookItems();
+          if (state.notebook.mode === "study" && items.length) {
+            state.notebook.studyIndex =
+              (state.notebook.studyIndex + step + items.length) % items.length;
+            state.notebook.studyFlipped = false;
+          }
+          render();
+          return;
+        }
         nextCard(step);
       };
 
@@ -2572,6 +3194,15 @@
           return;
         }
         if (state.view === "progress") {
+          render();
+          return;
+        }
+        if (state.view === "notebook") {
+          const items = filteredNotebookItems();
+          if (state.notebook.mode === "study" && items.length) {
+            state.notebook.studyIndex = Math.floor(Math.random() * items.length);
+            state.notebook.studyFlipped = false;
+          }
           render();
           return;
         }
@@ -2839,6 +3470,11 @@
         if (state.view === "progress") {
           saveStudyTime();
         }
+        if (state.view === "notebook") {
+          if (state.notebook.mode === "study") {
+            state.notebook.studyFlipped = !state.notebook.studyFlipped;
+          }
+        }
         render();
       });
       el.prevButton.addEventListener("click", () => nextPractice(-1));
@@ -2855,6 +3491,94 @@
         const difficultButton = event.target.closest("#difficultButton");
         if (difficultButton) {
           toggleDifficultCard(currentCard());
+          return;
+        }
+        const addCurrentNotebook = event.target.closest("[data-add-current-notebook]");
+        if (addCurrentNotebook) {
+          upsertNotebookItem(notebookItemFromCard(currentLearningCard()));
+          render();
+          return;
+        }
+        const favoriteCurrent = event.target.closest("[data-favorite-current]");
+        if (favoriteCurrent) {
+          upsertNotebookItem(notebookItemFromCard(currentLearningCard(), true), {
+            favorite: true,
+          });
+          render();
+          return;
+        }
+        const notebookSaveButton = event.target.closest("[data-notebook-save]");
+        if (notebookSaveButton) {
+          saveNotebookForm();
+          return;
+        }
+        const notebookClearButton = event.target.closest("[data-notebook-clear]");
+        if (notebookClearButton) {
+          state.notebook.editingId = "";
+          render();
+          return;
+        }
+        const notebookEditButton = event.target.closest("[data-notebook-edit]");
+        if (notebookEditButton) {
+          state.notebook.editingId = notebookEditButton.dataset.notebookEdit;
+          state.notebook.mode = "list";
+          render();
+          return;
+        }
+        const notebookDeleteButton = event.target.closest("[data-notebook-delete]");
+        if (notebookDeleteButton) {
+          removeNotebookItem(notebookDeleteButton.dataset.notebookDelete);
+          render();
+          return;
+        }
+        const notebookFavoriteButton = event.target.closest("[data-notebook-favorite]");
+        if (notebookFavoriteButton) {
+          const item = state.notebook.items.find(
+            (entry) => entry.id === notebookFavoriteButton.dataset.notebookFavorite,
+          );
+          if (item) {
+            item.favorite = !item.favorite;
+            saveNotebook();
+            showToast(item.favorite ? "Đã đánh dấu yêu thích." : "Đã bỏ yêu thích.");
+            render();
+          }
+          return;
+        }
+        const notebookModeButton = event.target.closest("[data-notebook-mode]");
+        if (notebookModeButton) {
+          state.notebook.mode = notebookModeButton.dataset.notebookMode;
+          state.notebook.studyFlipped = false;
+          render();
+          return;
+        }
+        const notebookRandomButton = event.target.closest("[data-notebook-random]");
+        if (notebookRandomButton) {
+          const items = filteredNotebookItems();
+          if (items.length) state.notebook.studyIndex = Math.floor(Math.random() * items.length);
+          state.notebook.studyFlipped = false;
+          render();
+          return;
+        }
+        const notebookAutoFlipButton = event.target.closest("[data-notebook-autoflip]");
+        if (notebookAutoFlipButton) {
+          state.notebook.autoFlip = !state.notebook.autoFlip;
+          render();
+          return;
+        }
+        const notebookFavOnlyButton = event.target.closest("[data-notebook-favonly]");
+        if (notebookFavOnlyButton) {
+          state.notebook.favoriteOnly = !state.notebook.favoriteOnly;
+          state.notebook.studyIndex = 0;
+          state.notebook.studyFlipped = false;
+          render();
+          return;
+        }
+        if (event.target.closest("[data-notebook-export-json]")) {
+          exportNotebookJson();
+          return;
+        }
+        if (event.target.closest("[data-notebook-export-xlsx]")) {
+          exportNotebookExcel();
           return;
         }
         const addButton = event.target.closest("#addCardButton");
@@ -2955,6 +3679,12 @@
         }
       });
       el.cardContent.addEventListener("input", (event) => {
+        if (event.target.id === "notebookSearch") {
+          state.notebook.query = event.target.value;
+          state.notebook.studyIndex = 0;
+          render();
+          return;
+        }
         const lesson = state.lessons[state.lessonIndex];
         if (!lesson) return;
         if (event.target.id === "lessonNameInput") {
@@ -2980,6 +3710,24 @@
         card.lesson = lesson.name;
         resetPractice();
         saveLessons();
+      });
+      el.cardContent.addEventListener("change", (event) => {
+        if (event.target.id === "notebookLevelFilter") {
+          state.notebook.levelFilter = event.target.value;
+          state.notebook.studyIndex = 0;
+          render();
+          return;
+        }
+        if (event.target.id === "notebookSort") {
+          state.notebook.sort = event.target.value;
+          state.notebook.studyIndex = 0;
+          render();
+          return;
+        }
+        if (event.target.id === "notebookImportInput") {
+          const file = event.target.files?.[0];
+          if (file) importNotebookFile(file);
+        }
       });
       el.excelInput.addEventListener("change", (event) => {
         const file = event.target.files?.[0];
@@ -3037,6 +3785,7 @@
         loadViewed();
         loadProgress();
         loadLearningStats();
+        loadNotebook();
         registerStudySession();
         loadTheme();
         loadFilter();

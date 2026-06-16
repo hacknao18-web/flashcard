@@ -6,6 +6,7 @@
     <title>HSK Flashcards</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
     <script src="hsk5_flashcards_data.js"></script>
     <style>
       :root {
@@ -891,6 +892,52 @@
         border: none;
       }
 
+      .stroke-panel {
+        display: grid;
+        gap: 12px;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-strong);
+        padding: 12px;
+        margin-top: 12px;
+      }
+
+      .stroke-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .stroke-char-list {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .stroke-char-button {
+        min-width: 38px;
+        height: 38px;
+        padding: 0 8px;
+        font-size: 22px;
+        line-height: 1;
+      }
+
+      .stroke-writer {
+        width: min(280px, 100%);
+        aspect-ratio: 1;
+        justify-self: center;
+      }
+
+      .stroke-actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
       @media (max-width: 880px) {
         .app {
           grid-template-columns: 1fr;
@@ -1248,6 +1295,14 @@
                 ></path>
               </svg>
             </button>
+            <button
+              class="tool-button"
+              id="strokeButton"
+              type="button"
+              aria-pressed="false"
+            >
+              Nét chữ
+            </button>
           </div>
         </header>
 
@@ -1298,6 +1353,7 @@
         quiz: null,
         match: null,
         miniExam: null,
+        stroke: { visible: false, charIndex: 0, writer: null },
         voices: [],
         markedCards: new Set(),
         difficultCards: new Set(),
@@ -1369,6 +1425,7 @@
         shuffleButton: document.querySelector("#shuffleButton"),
         speakButton: document.querySelector("#speakButton"),
         hanziiButton: document.querySelector("#hanziiButton"),
+        strokeButton: document.querySelector("#strokeButton"),
         modeButtons: [...document.querySelectorAll("[data-mode]")],
         viewButtons: [...document.querySelectorAll("[data-view]")],
         quizButtons: [...document.querySelectorAll("[data-quiz-direction]")],
@@ -2025,9 +2082,96 @@
           .replaceAll('"', "&quot;")
           .replaceAll("'", "&#039;");
 
+      const chineseChars = (text) =>
+        [...normalize(text)].filter((char) =>
+          /[\u3400-\u9fff\uf900-\ufaff]/.test(char),
+        );
+
       const field = (label, value, className = "") => {
         if (!normalize(value)) return "";
         return `<div class="field ${className}"><strong>${label}</strong>${escapeHtml(value)}</div>`;
+      };
+
+      const renderStrokeOrderPanel = (card) => {
+        const chars = chineseChars(card?.front);
+        if (!state.stroke.visible || !chars.length) return "";
+        state.stroke.charIndex =
+          (state.stroke.charIndex + chars.length) % chars.length;
+        const selected = chars[state.stroke.charIndex];
+        const buttons = chars
+          .map(
+            (char, index) => `
+              <button
+                class="tool-button stroke-char-button ${index === state.stroke.charIndex ? "primary" : ""}"
+                data-stroke-char="${index}"
+                type="button"
+                lang="zh-Hans"
+              >${escapeHtml(char)}</button>
+            `,
+          )
+          .join("");
+        return `
+          <div class="stroke-panel">
+            <div class="stroke-toolbar">
+              <strong>Thứ tự nét: <span lang="zh-Hans">${escapeHtml(selected)}</span></strong>
+              <div class="stroke-char-list">${buttons}</div>
+            </div>
+            <div class="stroke-writer" id="strokeWriterTarget" aria-label="Thứ tự nét chữ ${escapeHtml(selected)}"></div>
+            <div class="stroke-actions">
+              <button class="tool-button primary" data-stroke-play type="button">Xem lại</button>
+              <button class="tool-button" data-stroke-quiz type="button">Tập viết</button>
+              <button class="tool-button" data-stroke-close type="button">Đóng</button>
+            </div>
+            <div class="hint" id="strokeStatus">Đang tải nét chữ...</div>
+          </div>
+        `;
+      };
+
+      const renderStrokeWriter = () => {
+        if (!state.stroke.visible) return;
+        const target = document.querySelector("#strokeWriterTarget");
+        const status = document.querySelector("#strokeStatus");
+        const card = currentLearningCard();
+        const chars = chineseChars(card?.front);
+        if (!target || !chars.length) return;
+        const char = chars[state.stroke.charIndex] || chars[0];
+        if (!window.HanziWriter) {
+          if (status)
+            status.textContent =
+              "Chưa tải được thư viện thứ tự nét. Hãy mở trang khi có Internet.";
+          return;
+        }
+        target.innerHTML = "";
+        state.stroke.writer = HanziWriter.create("strokeWriterTarget", char, {
+          width: Math.min(280, target.clientWidth || 280),
+          height: Math.min(280, target.clientWidth || 280),
+          padding: 8,
+          showOutline: true,
+          showCharacter: false,
+          strokeAnimationSpeed: 1,
+          delayBetweenStrokes: 120,
+          radicalColor: "#b07a3f",
+        });
+        state.stroke.writer.animateCharacter({
+          onComplete: () => {
+            if (status) status.textContent = "Bấm “Xem lại” để chạy lại hoặc “Tập viết” để luyện nét.";
+          },
+        });
+      };
+
+      const scheduleStrokeWriter = () => {
+        window.setTimeout(renderStrokeWriter, 0);
+      };
+
+      const toggleStrokePanel = () => {
+        const card = currentLearningCard();
+        if (!chineseChars(card?.front).length) {
+          showToast("Thẻ hiện tại không có chữ Hán để xem nét.");
+          return;
+        }
+        state.stroke.visible = !state.stroke.visible;
+        state.stroke.charIndex = 0;
+        render();
       };
 
       const shuffleArray = (items) => {
@@ -2178,6 +2322,11 @@
           "aria-pressed",
           String(state.reviewDifficultOnly),
         );
+        el.strokeButton?.classList.toggle("primary", state.stroke.visible);
+        el.strokeButton?.setAttribute(
+          "aria-pressed",
+          String(state.stroke.visible),
+        );
         el.lightThemeButton?.setAttribute(
           "aria-pressed",
           String(state.theme === "light"),
@@ -2310,6 +2459,7 @@
           const hanziiUrl = `https://hanzii.net/search/word/${encodeURIComponent(card.front)}?hl=vi`;
           html += `<div class="hanzii-container"><iframe src="${hanziiUrl}" title="Hanzii Dictionary"></iframe></div>`;
         }
+        html += renderStrokeOrderPanel(card);
         html += `
           <div class="flashcard-progress">
             <div class="progress-bar">
@@ -2341,6 +2491,7 @@
           </div>
         `;
         el.cardContent.innerHTML = html;
+        scheduleStrokeWriter();
       };
 
       const createQuiz = () => {
@@ -2521,8 +2672,10 @@
           <div class="feedback">${escapeHtml(feedback)}</div>
           ${quickNotebook}
           ${hanziiSection}
+          ${renderStrokeOrderPanel(quiz.card)}
         </div>
       `;
+        scheduleStrokeWriter();
       };
 
       const renderMiniExam = () => {
@@ -3617,7 +3770,27 @@
       el.shuffleButton.addEventListener("click", shuffleCards);
       el.speakButton.addEventListener("click", speakChinese);
       el.hanziiButton.addEventListener("click", openHanzii);
+      el.strokeButton.addEventListener("click", toggleStrokePanel);
       el.cardContent.addEventListener("click", (event) => {
+        const strokeCharButton = event.target.closest("[data-stroke-char]");
+        if (strokeCharButton) {
+          state.stroke.charIndex = Number(strokeCharButton.dataset.strokeChar);
+          render();
+          return;
+        }
+        if (event.target.closest("[data-stroke-play]")) {
+          state.stroke.writer?.animateCharacter();
+          return;
+        }
+        if (event.target.closest("[data-stroke-quiz]")) {
+          state.stroke.writer?.quiz();
+          return;
+        }
+        if (event.target.closest("[data-stroke-close]")) {
+          state.stroke.visible = false;
+          render();
+          return;
+        }
         const reviewButton = event.target.closest("[data-review-result]");
         if (reviewButton) {
           const card = currentCard();
